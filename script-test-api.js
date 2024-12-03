@@ -1,30 +1,61 @@
 const tableContainer = document.getElementById("table-container");
 const sqlQueryContainer = document.getElementById("sql-query-container");
 
-// Clear previous states, including popups and table
+let startTime; // Track start time globally
+
+// Show loading indicator with dynamic timer
+function showLoadingIndicator() {
+  startTime = Date.now();
+  tableContainer.innerHTML = `<div class="loading-indicator"><br><br>Loading...</div>`;
+
+  const updateTime = () => {
+    const elapsedTime = Math.floor((Date.now() - startTime) / 1000);
+    const minutes = Math.floor(elapsedTime / 60);
+    const seconds = elapsedTime % 60;
+    const timeText =
+      minutes > 0
+        ? `Loading... (${minutes} minute${
+            minutes > 1 ? "s" : ""
+          } ${seconds} second${seconds !== 1 ? "s" : ""})`
+        : `Loading... (${seconds} second${seconds !== 1 ? "s" : ""})`;
+
+    const loadingIndicator = document.querySelector(".loading-indicator");
+    if (loadingIndicator) {
+      loadingIndicator.textContent = timeText;
+      setTimeout(updateTime, 1000);
+    }
+  };
+
+  updateTime();
+}
+
+// Hide loading indicator and log total time
+function hideLoadingIndicator() {
+  const elapsedTime = Math.floor((Date.now() - startTime) / 1000);
+  const minutes = Math.floor(elapsedTime / 60);
+  const seconds = elapsedTime % 60;
+  const finalTimeText =
+    minutes > 0
+      ? `${minutes} minute${minutes > 1 ? "s" : ""} and ${seconds} second${
+          seconds !== 1 ? "s" : ""
+        }`
+      : `${seconds} second${seconds !== 1 ? "s" : ""}`;
+
+  console.log(`Data loaded in ${finalTimeText}.`);
+  tableContainer.innerHTML = ""; // Clear the loading message
+}
+
 function clearPreviousState() {
   tableContainer.innerHTML = "";
   sqlQueryContainer.innerHTML = "";
   closeExistingPopup();
 }
 
-// Close existing popup if any
 function closeExistingPopup() {
   const existingPopup = document.querySelector(".popup");
   if (existingPopup) existingPopup.remove();
 }
 
-// Show loading indicator
-function showLoadingIndicator() {
-  tableContainer.innerHTML = `<div class="loading-indicator"><br><br>Loading...</div>`;
-}
-
-// Hide loading indicator
-function hideLoadingIndicator() {
-  tableContainer.innerHTML = "";
-}
-
-// Process user query
 async function processQuery(userQuery) {
   if (!userQuery.trim()) {
     alert("Please enter a valid query.");
@@ -41,13 +72,11 @@ async function processQuery(userQuery) {
   }
 }
 
-// Visualize initial table
 async function initialTableVisualizer(userQuery) {
   const jsonData = await fetchInitialData(userQuery);
   visualizeTable(jsonData);
 }
 
-// Fetch initial data
 async function fetchInitialData(userQuery) {
   showLoadingIndicator();
   try {
@@ -67,7 +96,6 @@ async function fetchInitialData(userQuery) {
   }
 }
 
-// Visualize table data
 async function visualizeTable(jsonData) {
   const {
     user_query: userQuery,
@@ -110,7 +138,6 @@ async function visualizeTable(jsonData) {
   tableContainer.innerHTML = tableHtml;
 }
 
-// Handle column click
 function handleColumnClick(
   event,
   userQuery,
@@ -143,8 +170,6 @@ function handleColumnClick(
   );
 }
 
-// Create popup
-// todo: make the popup div rounded corner
 function createPopup(x, y, userQuery, columnName, sqlQuery, options) {
   closeExistingPopup();
 
@@ -169,7 +194,7 @@ function createPopup(x, y, userQuery, columnName, sqlQuery, options) {
   options.forEach((option) => {
     const button = document.createElement("button");
     button.textContent = option;
-    button.style.marginTop = "5px"; // Ensure space between buttons
+    button.style.marginTop = "5px";
     button.onclick = async () => {
       drilledTableVisualizer(
         userQuery,
@@ -196,15 +221,12 @@ function createPopup(x, y, userQuery, columnName, sqlQuery, options) {
   }, 0);
 }
 
-// Check if column is drillable
 function checkIfColumnIsDrillable(columnName, metadataInfo) {
   if (!metadataInfo) return false;
   return Object.values(metadataInfo).some((group) =>
     group.some((col) => col.column_name === columnName)
   );
 }
-
-// Get drill options
 function getDrillOptions(columnName, metadataInfo) {
   const column = Object.values(metadataInfo)
     .flat()
@@ -217,7 +239,6 @@ function getDrillOptions(columnName, metadataInfo) {
     : [];
 }
 
-// Visualize drilled table
 async function drilledTableVisualizer(
   userQuery,
   buttonName,
@@ -233,7 +254,6 @@ async function drilledTableVisualizer(
   visualizeTable(jsonData);
 }
 
-// Fetch drilled data
 async function fetchDrilledData(userQuery, buttonName, columnName, sqlQuery) {
   console.log("drill across: ", buttonName === "Drill Across");
   showLoadingIndicator();
