@@ -1,0 +1,106 @@
+{
+    "user_query": "what is the departmentwise profit for the year 2022",
+    "sql_query": "SELECT EXTRACT(YEAR FROM date) AS year, class_id, class_description, SUM(sales_amount) AS total_sales \nFROM dm_rtl_stock_movement \nGROUP BY year, class_id, class_description \nORDER BY year, total_sales DESC \nLIMIT 10",
+    "results": {
+        "schema": {
+            "fields": [
+                {
+                    "name": "year",
+                    "type": "integer"
+                },
+                {
+                    "name": "class_id",
+                    "type": "string"
+                },
+                {
+                    "name": "class_description",
+                    "type": "string"
+                },
+                {
+                    "name": "total_sales",
+                    "type": "string"
+                }
+            ],
+            "pandas_version": "1.4.0"
+        },
+        "data": [
+            {
+                "year": 2019,
+                "class_id": "03060050379",
+                "class_description": "SLIPPERS",
+                "total_sales": null
+            },
+            {
+                "year": 2019,
+                "class_id": "03060141275",
+                "class_description": "ARMWARMERS",
+                "total_sales": null
+            },
+            {
+                "year": 2019,
+                "class_id": "03060323079",
+                "class_description": "PC",
+                "total_sales": null
+            },
+            {
+                "year": 2019,
+                "class_id": null,
+                "class_description": null,
+                "total_sales": 81484926.90
+            },
+            {
+                "year": 2019,
+                "class_id": "03050242282",
+                "class_description": "DENIM PANTS",
+                "total_sales": 2329849.23
+            },
+            {
+                "year": 2019,
+                "class_id": "03050343282",
+                "class_description": "DRESSES",
+                "total_sales": 1797369.49
+            },
+            {
+                "year": 2019,
+                "class_id": "03050282680",
+                "class_description": "TANKS",
+                "total_sales": 1322820.50
+            },
+            {
+                "year": 2019,
+                "class_id": "03050343281",
+                "class_description": "SKIRTS",
+                "total_sales": 1303114.71
+            },
+            {
+                "year": 2019,
+                "class_id": "03050242281",
+                "class_description": "DENIM SHORTS",
+                "total_sales": 1199859.16
+            },
+            {
+                "year": 2019,
+                "class_id": "03050282681",
+                "class_description": "TEES",
+                "total_sales": 1114541.19
+            }
+        ]
+    },
+    "metadata_info": {
+        "merchandise": [
+            {
+                "column_name": "class_id",
+                "is_drillable": true
+            },
+            {
+                "column_name": "class_description",
+                "is_drillable": true
+            },
+            {
+                "column_name": "total_sales"
+            }
+        ],
+        "location": [],
+        "time": []
+    }
+}

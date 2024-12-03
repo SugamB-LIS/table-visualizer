@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Table Visualizer</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <h1>Generate Table from Query</h1>
+
+    <input
+      type="text"
+      id="user-query"
+      placeholder="Enter your query (e.g., 'Sales Data for Electronics in New York')"
+    />
+    <button onclick="processQuery(document.getElementById('user-query').value)">
+      Generate Table
+    </button>
+    <div id="sql-query-container"></div>
+    <div id="table-container"></div>
+
+    <script src="script-test-api.js"></script>
+    <!-- <script src="script-test-api-semiworking.js"></script> -->
+    <!-- <script src="script-local-data.js"></script> -->
+  </body>
+</html>
