@@ -106,19 +106,19 @@ async function visualizeTable(jsonData) {
 
   const parsedTableData = JSON.parse(tableData);
 
-  sqlQueryContainer.innerHTML = `<pre>${sqlQuery}</pre>`;
-
   let tableHtml = "<table><thead><tr>";
   parsedTableData.schema.fields.forEach((col) => {
     const isClickable = checkIfColumnIsDrillable(col.name, metadataInfo);
     tableHtml += `<th>
       ${
         isClickable
-          ? `<a href="javascript:void(0);" class="clickable" onclick="handleColumnClick(event, '${userQuery}', '${
-              col.name
-            }', '${encodeURIComponent(
+          ? `<a href="javascript:void(0);" class="clickable" onclick="handleColumnClick(event, &quot;${encodeURIComponent(
+              userQuery
+            )}&quot;, '${col.name}', &quot;${encodeURIComponent(
               JSON.stringify(metadataInfo)
-            )}','${encodeURIComponent(sqlQuery)}')">${col.name}</a>`
+            )}&quot;,&quot;${encodeURIComponent(sqlQuery)}&quot;)">${
+              col.name
+            }</a>`
           : col.name
       }
     </th>`;
@@ -127,20 +127,20 @@ async function visualizeTable(jsonData) {
   tableHtml += "</tr></thead><tbody>";
   parsedTableData.data.forEach((row) => {
     tableHtml += "<tr>";
-    // parsedTableData.schema.fields.forEach((col) => {
-    //   const isClickable = checkIfColumnIsDrillable(col.name, metadataInfo);
-    //   tableHtml += `<td>${
-    //     isClickable ? `<u>${row[col.name]}</u>` : row[col.name]
-    //   }</td>`;
-    // });
-
     parsedTableData.schema.fields.forEach((col) => {
       const isClickable = checkIfColumnIsDrillable(col.name, metadataInfo);
+      // tableHtml += `<td>${
+      //   isClickable
+      //     ? `<a href="javascript:void(0);" class="clickable" onclick="handleRowClick(event, '${userQuery}', '${
+      //         col.name
+      //       }', '${encodeURIComponent(sqlQuery)}' )">${row[col.name]}</a>`
+      //     : row[col.name]
+      // }</td>`;
       tableHtml += `<td>${
         isClickable
-          ? `<a href="javascript:void(0);" class="clickable" onclick="handleRowClick(event )">${
-              row[col.name]
-            }</a>`
+          ? `<a href="javascript:void(0);" class="clickable" onclick="handleRowClick(event, &quot;${encodeURIComponent(
+              userQuery
+            )}&quot;)">${row[col.name]}</a>`
           : row[col.name]
       }</td>`;
     });
@@ -150,11 +150,46 @@ async function visualizeTable(jsonData) {
 
   tableHtml += "</tbody></table>";
   tableContainer.innerHTML = tableHtml;
+  sqlQueryContainer.innerHTML = `<pre>${sqlQuery}</pre>`;
 }
 
-function handleRowClick(event) {
-  console.log("Row value:", event.target.innerHTML);
-  console.log("event:", event);
+// async function handleRowClick(event) {
+async function handleRowClick(event, userQuery) {
+  // async function handleRowClick(event, userQuery, columnName) {
+  // async function handleRowClick(event, userQuery, columnName, sqlQuery) {
+  const rowValue = event.target.innerHTML;
+  const decodedUserQuery = decodeURIComponent(userQuery);
+
+  console.log("handleRowClick:", decodedUserQuery, rowValue);
+  // console.log("handleRowClick:", rowValue);
+  // console.log("handleRowClick:", userQuery, rowValue);
+  // console.log("handleRowClick:", columnName, sqlQuery, rowValue);
+  // console.log("handleRowClick:", userQuery, columnName, sqlQuery, rowValue);
+
+  // showLoadingIndicator();
+  // try {
+  //   const response = await fetch("http://127.0.0.1:8000/perform-drilling", {
+  //     method: "POST",
+  //     headers: { "Content-Type": "application/json" },
+  //     body: JSON.stringify({
+  //       user_query: userQuery,
+  //       sql_query: sqlQuery,
+  //       drilling_metadata: {
+  //         column_name: columnName,
+  //         column_value: rowValue,
+  //         drill_across: false,
+  //       },
+  //     }),
+  //   });
+
+  //   const data = await response.json();
+  //   return data;
+  // } catch (error) {
+  //   console.error("Error fetching drilled data:", error);
+  //   throw error;
+  // } finally {
+  //   hideLoadingIndicator();
+  // }
 }
 
 function handleColumnClick(
@@ -182,7 +217,7 @@ function handleColumnClick(
   createPopup(
     event.pageX,
     event.pageY,
-    userQuery,
+    encodeURIComponent(userQuery),
     columnName,
     sqlQuery,
     options
@@ -216,7 +251,7 @@ function createPopup(x, y, userQuery, columnName, sqlQuery, options) {
     button.style.marginTop = "5px";
     button.onclick = async () => {
       drilledTableVisualizer(
-        userQuery,
+        encodeURIComponent(userQuery),
         option,
         columnName,
         decodeURIComponent(sqlQuery)
@@ -265,7 +300,7 @@ async function drilledTableVisualizer(
   sqlQuery
 ) {
   const jsonData = await fetchDrilledData(
-    userQuery,
+    encodeURIComponent(userQuery),
     buttonName,
     columnName,
     sqlQuery
@@ -274,14 +309,13 @@ async function drilledTableVisualizer(
 }
 
 async function fetchDrilledData(userQuery, buttonName, columnName, sqlQuery) {
-  console.log("drill across: ", buttonName === "Drill Across");
   showLoadingIndicator();
   try {
     const response = await fetch("http://127.0.0.1:8000/perform-drilling", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        user_query: userQuery,
+        user_query: decodeURIComponent(userQuery),
         sql_query: sqlQuery,
         drilling_metadata: {
           column_name: columnName,
@@ -300,3 +334,8 @@ async function fetchDrilledData(userQuery, buttonName, columnName, sqlQuery) {
     hideLoadingIndicator();
   }
 }
+
+// processQuery("what is the department wise profit for the year 2022");
+processQuery(
+  "what is the department wise profit from date >= '2022-01-01' AND date < '2023-01-01'"
+);
