@@ -126,16 +126,35 @@ async function visualizeTable(jsonData) {
 
   tableHtml += "</tr></thead><tbody>";
   parsedTableData.data.forEach((row) => {
-    tableHtml +=
-      "<tr>" +
-      parsedTableData.schema.fields
-        .map((col) => `<td>${row[col.name]}</td>`)
-        .join("") +
-      "</tr>";
+    tableHtml += "<tr>";
+    // parsedTableData.schema.fields.forEach((col) => {
+    //   const isClickable = checkIfColumnIsDrillable(col.name, metadataInfo);
+    //   tableHtml += `<td>${
+    //     isClickable ? `<u>${row[col.name]}</u>` : row[col.name]
+    //   }</td>`;
+    // });
+
+    parsedTableData.schema.fields.forEach((col) => {
+      const isClickable = checkIfColumnIsDrillable(col.name, metadataInfo);
+      tableHtml += `<td>${
+        isClickable
+          ? `<a href="javascript:void(0);" class="clickable" onclick="handleRowClick(event )">${
+              row[col.name]
+            }</a>`
+          : row[col.name]
+      }</td>`;
+    });
+
+    tableHtml += "</tr>";
   });
 
   tableHtml += "</tbody></table>";
   tableContainer.innerHTML = tableHtml;
+}
+
+function handleRowClick(event) {
+  console.log("Row value:", event.target.innerHTML);
+  console.log("event:", event);
 }
 
 function handleColumnClick(
