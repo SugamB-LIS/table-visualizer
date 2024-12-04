@@ -217,7 +217,7 @@ function handleColumnClick(
   createPopup(
     event.pageX,
     event.pageY,
-    encodeURIComponent(userQuery),
+    userQuery,
     columnName,
     sqlQuery,
     options
@@ -251,7 +251,7 @@ function createPopup(x, y, userQuery, columnName, sqlQuery, options) {
     button.style.marginTop = "5px";
     button.onclick = async () => {
       drilledTableVisualizer(
-        encodeURIComponent(userQuery),
+        userQuery,
         option,
         columnName,
         decodeURIComponent(sqlQuery)
@@ -300,7 +300,7 @@ async function drilledTableVisualizer(
   sqlQuery
 ) {
   const jsonData = await fetchDrilledData(
-    encodeURIComponent(userQuery),
+    userQuery,
     buttonName,
     columnName,
     sqlQuery
@@ -335,7 +335,7 @@ async function fetchDrilledData(userQuery, buttonName, columnName, sqlQuery) {
   }
 }
 
-// processQuery("what is the department wise profit for the year 2022");
-processQuery(
-  "what is the department wise profit from date >= '2022-01-01' AND date < '2023-01-01'"
-);
+processQuery("what is the department wise profit for the year 2022");
+// processQuery(
+//   "what is the department wise profit from date >= '2022-01-01' AND date < '2023-01-01'"
+// );
