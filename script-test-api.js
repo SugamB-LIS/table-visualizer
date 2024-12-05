@@ -69,6 +69,7 @@ async function processQuery(userQuery) {
     await initialTableVisualizer(userQuery);
   } catch (error) {
     console.error("Error processing query:", error);
+    alert("Error processing query. Please try again.");
   }
 }
 
@@ -82,7 +83,7 @@ async function fetchInitialData(userQuery) {
   try {
     const response = await fetch("http://127.0.0.1:8000/fetch-data", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json; charset=utf-8" },
       body: JSON.stringify({ user_query: userQuery }),
     });
 
@@ -116,35 +117,29 @@ async function visualizeTable(jsonData) {
 
   let tableHtml = "<table><thead><tr>";
   tableData.schema.fields.forEach((col) => {
-    const isClickable = checkIfColumnIsDrillable(col.name, metadataInfo);
-    tableHtml += `<th>
-      ${
-        isClickable
-          ? `<a href="javascript:void(0);" class="clickable" onclick="handleColumnClick(event, &quot;${userQuery}&quot;, '${col.name}', &quot;${metadataInfo}&quot;, &quot;${sqlQuery}&quot;,&quot;&quot;)">${col.name}</a>`
-          : col.name
-      }
-    </th>`;
+    tableHtml += `<th>${generateClickableContent(
+      col.name,
+      "",
+      metadataInfo,
+      sqlQuery,
+      userQuery,
+      true
+    )}</th>`;
   });
-
   tableHtml += "</tr></thead><tbody>";
+
   tableData.data.forEach((row) => {
     tableHtml += "<tr>";
     tableData.schema.fields.forEach((col) => {
-      const isClickable = checkIfColumnIsDrillable(col.name, metadataInfo);
-      tableHtml += `<td>${
-        isClickable
-          ? `
-          <a href="javascript:void(0);" class="clickable" onclick="handleColumnClick(event, &quot;${userQuery}&quot;, '${
-              col.name
-            }', &quot;${metadataInfo}&quot;, &quot;${sqlQuery}&quot;, &quot;${
-              row[col.name]
-            }&quot;)">${row[col.name]}
-            </a>
-            `
-          : row[col.name]
-      }</td>`;
+      const cellContent = generateClickableContent(
+        col.name,
+        row[col.name],
+        metadataInfo,
+        sqlQuery,
+        userQuery
+      );
+      tableHtml += `<td>${cellContent}</td>`;
     });
-
     tableHtml += "</tr>";
   });
 
@@ -153,6 +148,23 @@ async function visualizeTable(jsonData) {
   sqlQueryContainer.innerHTML = `<pre>${rawSqlQuery}</pre>`;
 }
 
+function generateClickableContent(
+  colName,
+  cellValue = "",
+  metadataInfo,
+  sqlQuery,
+  userQuery,
+  isHeader = false
+) {
+  const isClickable = checkIfColumnIsDrillable(colName, metadataInfo);
+  if (isClickable) {
+    const onclickHandler = `handleColumnClick(event, &quot;${userQuery}&quot;, '${colName}', &quot;${metadataInfo}&quot;, &quot;${sqlQuery}&quot;, &quot;${cellValue}&quot;)`;
+    return `<a href="javascript:void(0);" class="clickable" onclick="${onclickHandler}">${
+      isHeader ? colName : cellValue
+    }</a>`;
+  }
+  return isHeader ? colName : cellValue;
+}
 function handleColumnClick(
   event,
   userQuery,
@@ -167,12 +179,14 @@ function handleColumnClick(
     metadataInfo = JSON.parse(decodeURIComponent(metadataInfo));
   } catch (err) {
     console.error("Error parsing metadataInfo:", err);
+    alert("Error parsing metadataInfo");
     return;
   }
 
   const options = getDrillOptions(columnName, metadataInfo);
   if (!options.length) {
     console.warn("No drill options available for column:", columnName);
+    alert("No drill options available for column: " + columnName);
     return;
   }
 
@@ -286,7 +300,7 @@ async function fetchDrilledData(
   try {
     const response = await fetch("http://127.0.0.1:8000/perform-drilling", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json; charset=utf-8" },
       body: JSON.stringify({
         user_query: decodeURIComponent(userQuery),
         sql_query: sqlQuery,
@@ -307,7 +321,3 @@ async function fetchDrilledData(
     hideLoadingIndicator();
   }
 }
-
-// processQuery(
-//   "what is the department wise profit from date >= '2022-01-01' AND date < '2023-01-01'"
-// );
