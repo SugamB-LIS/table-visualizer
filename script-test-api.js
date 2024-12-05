@@ -109,8 +109,6 @@ async function visualizeTable(jsonData) {
   const tableData = JSON.parse(rawTableData);
   const metadataInfo = encodeURIComponent(JSON.stringify(rawMetadataInfo));
 
-  // const tableData = JSON.parse(tableData);
-
   if (tableData.data.length === 0) {
     tableContainer.innerHTML = `<br><br><strong>Nothing to display. Try a different query.</strong>`;
     return;
