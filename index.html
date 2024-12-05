@@ -13,6 +13,7 @@
       type="text"
       id="user-query"
       placeholder="Enter your query (e.g., 'Sales Data for Electronics in New York')"
+      onkeydown="if (event.key === 'Enter') processQuery(this.value)"
     />
     <button onclick="processQuery(document.getElementById('user-query').value)">
       Generate Table
