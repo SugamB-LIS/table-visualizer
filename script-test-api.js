@@ -145,7 +145,6 @@ async function visualizeTable(jsonData) {
 
   tableHtml += "</tbody></table>";
   tableContainer.innerHTML = tableHtml;
-
   sqlQueryContainer.innerHTML = `<pre>${rawSqlQuery}</pre>`;
 }
 
@@ -320,7 +319,3 @@ async function fetchDrilledData(
     hideLoadingIndicator();
   }
 }
-
-// processQuery(
-//   "what is the department wise profit from date >= '2022-01-01' AND date < '2023-01-01'"
-// );
