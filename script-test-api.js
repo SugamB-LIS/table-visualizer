@@ -98,81 +98,93 @@ async function fetchInitialData(userQuery) {
 
 async function visualizeTable(jsonData) {
   const {
-    user_query: userQuery,
-    sql_query: sqlQuery,
-    results: tableData,
-    metadata_info: metadataInfo,
+    user_query: rawUserQuery,
+    sql_query: rawSqlQuery,
+    results: rawTableData,
+    metadata_info: rawMetadataInfo,
   } = jsonData;
 
-  const parsedTableData = JSON.parse(tableData);
+  const userQuery = encodeURIComponent(rawUserQuery);
+  const sqlQuery = encodeURIComponent(rawSqlQuery);
+  const tableData = JSON.parse(rawTableData);
+  const metadataInfo = encodeURIComponent(JSON.stringify(rawMetadataInfo));
+
+  // const tableData = JSON.parse(tableData);
+
+  if (tableData.data.length === 0) {
+    tableContainer.innerHTML = `<br><br><strong>Nothing to display. Try a different query.</strong>`;
+    return;
+  }
 
   let tableHtml = "<table><thead><tr>";
-  parsedTableData.schema.fields.forEach((col) => {
+  tableData.schema.fields.forEach((col) => {
     const isClickable = checkIfColumnIsDrillable(col.name, metadataInfo);
     tableHtml += `<th>
       ${
         isClickable
-          ? `<a href="javascript:void(0);" class="clickable" onclick="handleColumnClick(event, &quot;${encodeURIComponent(
-              userQuery
-            )}&quot;, '${col.name}', &quot;${encodeURIComponent(
-              JSON.stringify(metadataInfo)
-            )}&quot;,&quot;${encodeURIComponent(sqlQuery)}&quot;)">${
-              col.name
-            }</a>`
+          ? `<a href="javascript:void(0);" class="clickable" onclick="handleColumnClick(event, &quot;${userQuery}&quot;, '${col.name}', &quot;${metadataInfo}&quot;, &quot;${sqlQuery}&quot;,&quot;&quot;)">${col.name}</a>`
           : col.name
       }
     </th>`;
   });
 
   tableHtml += "</tr></thead><tbody>";
-  parsedTableData.data.forEach((row) => {
+  tableData.data.forEach((row) => {
     tableHtml += "<tr>";
-    parsedTableData.schema.fields.forEach((col) => {
+    tableData.schema.fields.forEach((col) => {
       const isClickable = checkIfColumnIsDrillable(col.name, metadataInfo);
-      // tableHtml += `<td>${
-      //   isClickable
-      //     ? `<a href="javascript:void(0);" class="clickable" onclick="handleRowClick(event, '${userQuery}', '${
-      //         col.name
-      //       }', '${encodeURIComponent(sqlQuery)}' )">${row[col.name]}</a>`
-      //     : row[col.name]
-      // }</td>`;
       tableHtml += `<td>${
         isClickable
-          ? `<a href="javascript:void(0);" class="clickable" onclick="handleRowClick(event, &quot;${encodeURIComponent(
-              userQuery
-            )}&quot;)">${row[col.name]}</a>`
+          ? `
+          <a href="javascript:void(0);" class="clickable" onclick="handleColumnClick(event, &quot;${userQuery}&quot;, '${
+              col.name
+            }', &quot;${metadataInfo}&quot;, &quot;${sqlQuery}&quot;, &quot;${
+              row[col.name]
+            }&quot;)">${row[col.name]}
+            </a>
+            `
           : row[col.name]
       }</td>`;
     });
 
+    // `          <a href="javascript:void(0);" class="clickable" onclick="handleRowClick(event, &quot;${encodeURIComponent(
+    //   userQuery
+    // )}&quot;, '${col.name}', &quot;${encodeURIComponent(
+    //   JSON.stringify(metadataInfo)
+    // )}&quot;, &quot;${encodeURIComponent(sqlQuery)}&quot;, &quot;${
+    //   row[col.name]
+    // }&quot;)">${row[col.name]}
+    //         </a>
+    //         `;
     tableHtml += "</tr>";
   });
 
   tableHtml += "</tbody></table>";
   tableContainer.innerHTML = tableHtml;
-  sqlQueryContainer.innerHTML = `<pre>${sqlQuery}</pre>`;
+  sqlQueryContainer.innerHTML = `<pre>${rawSqlQuery}</pre>`;
 }
 
-// async function handleRowClick(event) {
-async function handleRowClick(event, userQuery) {
-  // async function handleRowClick(event, userQuery, columnName) {
-  // async function handleRowClick(event, userQuery, columnName, sqlQuery) {
+async function handleRowClick(
+  event,
+  userQuery,
+  columnName,
+  metadataInfo,
+  sqlQuery,
+  rowColumnName
+) {
   const rowValue = event.target.innerHTML;
   const decodedUserQuery = decodeURIComponent(userQuery);
 
-  console.log("handleRowClick:", decodedUserQuery, rowValue);
-  // console.log("handleRowClick:", rowValue);
-  // console.log("handleRowClick:", userQuery, rowValue);
-  // console.log("handleRowClick:", columnName, sqlQuery, rowValue);
-  // console.log("handleRowClick:", userQuery, columnName, sqlQuery, rowValue);
-
+  console.log("handleRowClick:", decodedUserQuery, "\nrowvalue: ", rowValue);
+  console.log("rowColumnName:", rowColumnName);
+  console.log("\n", columnName, metadataInfo, sqlQuery);
   // showLoadingIndicator();
   // try {
   //   const response = await fetch("http://127.0.0.1:8000/perform-drilling", {
   //     method: "POST",
   //     headers: { "Content-Type": "application/json" },
   //     body: JSON.stringify({
-  //       user_query: userQuery,
+  //       user_query: decodedUserQuery,
   //       sql_query: sqlQuery,
   //       drilling_metadata: {
   //         column_name: columnName,
@@ -197,7 +209,8 @@ function handleColumnClick(
   userQuery,
   columnName,
   metadataInfo,
-  sqlQuery
+  sqlQuery,
+  rowValue
 ) {
   event.preventDefault();
 
@@ -220,11 +233,12 @@ function handleColumnClick(
     userQuery,
     columnName,
     sqlQuery,
-    options
+    options,
+    rowValue
   );
 }
 
-function createPopup(x, y, userQuery, columnName, sqlQuery, options) {
+function createPopup(x, y, userQuery, columnName, sqlQuery, options, rowValue) {
   closeExistingPopup();
 
   const popup = document.createElement("div");
@@ -254,7 +268,8 @@ function createPopup(x, y, userQuery, columnName, sqlQuery, options) {
         userQuery,
         option,
         columnName,
-        decodeURIComponent(sqlQuery)
+        decodeURIComponent(sqlQuery),
+        rowValue
       );
       popup.remove();
     };
@@ -276,6 +291,7 @@ function createPopup(x, y, userQuery, columnName, sqlQuery, options) {
 }
 
 function checkIfColumnIsDrillable(columnName, metadataInfo) {
+  metadataInfo = JSON.parse(decodeURIComponent(metadataInfo));
   if (!metadataInfo) return false;
   return Object.values(metadataInfo).some((group) =>
     group.some((col) => col.column_name === columnName)
@@ -297,18 +313,26 @@ async function drilledTableVisualizer(
   userQuery,
   buttonName,
   columnName,
-  sqlQuery
+  sqlQuery,
+  rowValue
 ) {
   const jsonData = await fetchDrilledData(
     userQuery,
     buttonName,
     columnName,
-    sqlQuery
+    sqlQuery,
+    rowValue
   );
   visualizeTable(jsonData);
 }
 
-async function fetchDrilledData(userQuery, buttonName, columnName, sqlQuery) {
+async function fetchDrilledData(
+  userQuery,
+  buttonName,
+  columnName,
+  sqlQuery,
+  rowValue
+) {
   showLoadingIndicator();
   try {
     const response = await fetch("http://127.0.0.1:8000/perform-drilling", {
@@ -319,7 +343,7 @@ async function fetchDrilledData(userQuery, buttonName, columnName, sqlQuery) {
         sql_query: sqlQuery,
         drilling_metadata: {
           column_name: columnName,
-          column_value: "", // Future functionality for row-specific drilling
+          column_value: rowValue, // functionality for row-specific drilling
           drill_across: buttonName === "Drill Across",
         },
       }),
@@ -335,7 +359,6 @@ async function fetchDrilledData(userQuery, buttonName, columnName, sqlQuery) {
   }
 }
 
-processQuery("what is the department wise profit for the year 2022");
 // processQuery(
 //   "what is the department wise profit from date >= '2022-01-01' AND date < '2023-01-01'"
 // );
