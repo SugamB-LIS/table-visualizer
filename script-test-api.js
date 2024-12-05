@@ -147,61 +147,12 @@ async function visualizeTable(jsonData) {
       }</td>`;
     });
 
-    // `          <a href="javascript:void(0);" class="clickable" onclick="handleRowClick(event, &quot;${encodeURIComponent(
-    //   userQuery
-    // )}&quot;, '${col.name}', &quot;${encodeURIComponent(
-    //   JSON.stringify(metadataInfo)
-    // )}&quot;, &quot;${encodeURIComponent(sqlQuery)}&quot;, &quot;${
-    //   row[col.name]
-    // }&quot;)">${row[col.name]}
-    //         </a>
-    //         `;
     tableHtml += "</tr>";
   });
 
   tableHtml += "</tbody></table>";
   tableContainer.innerHTML = tableHtml;
   sqlQueryContainer.innerHTML = `<pre>${rawSqlQuery}</pre>`;
-}
-
-async function handleRowClick(
-  event,
-  userQuery,
-  columnName,
-  metadataInfo,
-  sqlQuery,
-  rowColumnName
-) {
-  const rowValue = event.target.innerHTML;
-  const decodedUserQuery = decodeURIComponent(userQuery);
-
-  console.log("handleRowClick:", decodedUserQuery, "\nrowvalue: ", rowValue);
-  console.log("rowColumnName:", rowColumnName);
-  console.log("\n", columnName, metadataInfo, sqlQuery);
-  // showLoadingIndicator();
-  // try {
-  //   const response = await fetch("http://127.0.0.1:8000/perform-drilling", {
-  //     method: "POST",
-  //     headers: { "Content-Type": "application/json" },
-  //     body: JSON.stringify({
-  //       user_query: decodedUserQuery,
-  //       sql_query: sqlQuery,
-  //       drilling_metadata: {
-  //         column_name: columnName,
-  //         column_value: rowValue,
-  //         drill_across: false,
-  //       },
-  //     }),
-  //   });
-
-  //   const data = await response.json();
-  //   return data;
-  // } catch (error) {
-  //   console.error("Error fetching drilled data:", error);
-  //   throw error;
-  // } finally {
-  //   hideLoadingIndicator();
-  // }
 }
 
 function handleColumnClick(
