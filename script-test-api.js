@@ -57,7 +57,6 @@ function closeExistingPopup() {
 }
 
 async function processQuery(userQuery) {
-  console.log("trying some breaking changes");
   if (!userQuery.trim()) {
     alert("Please enter a valid query.");
     return;
@@ -70,6 +69,7 @@ async function processQuery(userQuery) {
     await initialTableVisualizer(userQuery);
   } catch (error) {
     console.error("Error processing query:", error);
+    alert("Error processing query. Please try again.");
   }
 }
 
@@ -179,12 +179,14 @@ function handleColumnClick(
     metadataInfo = JSON.parse(decodeURIComponent(metadataInfo));
   } catch (err) {
     console.error("Error parsing metadataInfo:", err);
+    alert("Error parsing metadataInfo");
     return;
   }
 
   const options = getDrillOptions(columnName, metadataInfo);
   if (!options.length) {
     console.warn("No drill options available for column:", columnName);
+    alert("No drill options available for column: " + columnName);
     return;
   }
 
