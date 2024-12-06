@@ -1,13 +1,14 @@
 const tableContainer = document.getElementById("table-container");
 const sqlQueryContainer = document.getElementById("sql-query-container");
-
+const messageContainer = document.getElementById("message-container");
 let startTime; // Track start time globally
 
 // Show loading indicator with dynamic timer
 function showLoadingIndicator() {
   startTime = Date.now();
-  tableContainer.innerHTML = `<div class="loading-indicator"><br><br>Loading...</div>`;
-
+  // tableContainer.innerHTML = `<div class="loading-indicator"><br><br>Loading...</div>`;
+  messageContainer.innerHTML = `<div class="loading-indicator"><br><br><strong>Loading...</strong></div>`;
+  tableContainer.style.display = "none";
   const updateTime = () => {
     const elapsedTime = Math.floor((Date.now() - startTime) / 1000);
     const minutes = Math.floor(elapsedTime / 60);
@@ -42,12 +43,16 @@ function hideLoadingIndicator() {
       : `${seconds} second${seconds !== 1 ? "s" : ""}`;
 
   console.log(`Data loaded in ${finalTimeText}.`);
-  tableContainer.innerHTML = ""; // Clear the loading message
+  messageContainer.innerHTML = "";
+  tableContainer.style.display = "block";
+  // nothingToDisplay();
+  // tableContainer.innerHTML = ""; // Clear the loading message
 }
 
 function clearPreviousState() {
   tableContainer.innerHTML = "";
   sqlQueryContainer.innerHTML = "";
+  messageContainer.innerHTML = "";
   closeExistingPopup();
 }
 
@@ -112,7 +117,9 @@ async function visualizeTable(jsonData) {
   const metadataInfo = encodeURIComponent(JSON.stringify(rawMetadataInfo));
 
   if (tableData.data.length === 0) {
-    tableContainer.innerHTML = `<br><br><strong>Nothing to display. Try a different query.</strong>`;
+    messageContainer.innerHTML = `<br><br><strong>Nothing to display. Try a different query.</strong>`;
+    // tableContainer.innerHTML = `<br><br><strong>Nothing to display. Try a different query.</strong>`;
+    nothingToDisplay();
     return;
   }
 
@@ -326,4 +333,22 @@ async function fetchDrilledData(
 
 function transformString(input) {
   return input.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+function nothingToDisplay() {
+  // messageContainer.innerHTML = `<br><br><strong>Nothing to display. Try a different query.</strong>`;
+  tableContainer.style.display = "none";
+  const goBackButton = document.createElement("button");
+  goBackButton.textContent = "<=== Go Back";
+  goBackButton.style.cssText = `
+    align-self: flex-end; margin-top: 10px 0 0 10px; cursor: pointer;
+  `;
+
+  goBackButton.onclick = () => {
+    messageContainer.innerHTML = "";
+    tableContainer.style.display = "block";
+    // console.trace("goBackButton", tableContainer.innerHTML);
+  };
+
+  messageContainer.appendChild(goBackButton);
 }
