@@ -6,7 +6,6 @@ let startTime; // Track start time globally
 // Show loading indicator with dynamic timer
 function showLoadingIndicator() {
   startTime = Date.now();
-  // tableContainer.innerHTML = `<div class="loading-indicator"><br><br>Loading...</div>`;
   messageContainer.innerHTML = `<div class="loading-indicator"><br><br><strong>Loading...</strong></div>`;
   tableContainer.style.display = "none";
   const updateTime = () => {
@@ -45,8 +44,6 @@ function hideLoadingIndicator() {
   console.log(`Data loaded in ${finalTimeText}.`);
   messageContainer.innerHTML = "";
   tableContainer.style.display = "block";
-  // nothingToDisplay();
-  // tableContainer.innerHTML = ""; // Clear the loading message
 }
 
 function clearPreviousState() {
@@ -118,7 +115,6 @@ async function visualizeTable(jsonData) {
 
   if (tableData.data.length === 0) {
     messageContainer.innerHTML = `<br><br><strong>Nothing to display. Try a different query.</strong>`;
-    // tableContainer.innerHTML = `<br><br><strong>Nothing to display. Try a different query.</strong>`;
     nothingToDisplay();
     return;
   }
@@ -215,10 +211,26 @@ function createPopup(x, y, userQuery, columnName, sqlQuery, options, rowValue) {
 
   const popup = document.createElement("div");
   popup.className = "popup";
+
+  const viewportHeight = window.innerHeight;
+  const popupHeight = 150;
+
+  // Check if there is enough space below the click for the popup.
+  const positionAbove = y + popupHeight > viewportHeight;
+  const adjustedY = positionAbove ? y - popupHeight : y;
+
   popup.style.cssText = `
-    position: absolute; top: ${y}px; left: ${x}px; padding: 10px;
-    background: #fff; border: 1px solid #ccc; box-shadow: 0px 4px 6px rgba(0,0,0,0.1);
-    z-index: 1000; width: 200px; display: flex; flex-direction: column;
+    position: absolute; 
+    top: ${positionAbove ? adjustedY : y}px; 
+    left: ${x}px; 
+    padding: 10px; 
+    background: #fff; 
+    border: 1px solid #ccc; 
+    box-shadow: 0px 4px 6px rgba(0,0,0,0.1); 
+    z-index: 1000; 
+    width: 200px; 
+    display: flex; 
+    flex-direction: column; 
     border-radius: 8px;
   `;
 
@@ -341,13 +353,12 @@ function nothingToDisplay() {
   const goBackButton = document.createElement("button");
   goBackButton.textContent = "<=== Go Back";
   goBackButton.style.cssText = `
-    align-self: flex-end; margin-top: 10px 0 0 10px; cursor: pointer;
+    align-self: flex-end; margin: 10px 0 0 10px; cursor: pointer;
   `;
 
   goBackButton.onclick = () => {
     messageContainer.innerHTML = "";
     tableContainer.style.display = "block";
-    // console.trace("goBackButton", tableContainer.innerHTML);
   };
 
   messageContainer.appendChild(goBackButton);
