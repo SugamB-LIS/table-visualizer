@@ -114,7 +114,7 @@ async function visualizeTable(jsonData) {
   const metadataInfo = encodeURIComponent(JSON.stringify(rawMetadataInfo));
 
   if (tableData.data.length === 0) {
-    messageContainer.innerHTML = `<br><br><strong>Nothing to display. Try a different query.</strong>`;
+    messageContainer.innerHTML = `<strong>Nothing to display.</strong>`;
     nothingToDisplay();
     return;
   }
@@ -212,22 +212,16 @@ function createPopup(x, y, userQuery, columnName, sqlQuery, options, rowValue) {
   const popup = document.createElement("div");
   popup.className = "popup";
 
-  const viewportHeight = window.innerHeight;
-  const popupHeight = 150;
-
-  // Check if there is enough space below the click for the popup.
-  const positionAbove = y + popupHeight > viewportHeight;
-  const adjustedY = positionAbove ? y - popupHeight : y;
-
   popup.style.cssText = `
     position: absolute; 
-    top: ${positionAbove ? adjustedY : y}px; 
+    top: ${y}px; 
     left: ${x}px; 
     padding: 10px; 
     background: #fff; 
     border: 1px solid #ccc; 
     box-shadow: 0px 4px 6px rgba(0,0,0,0.1); 
     z-index: 1000; 
+    padding: 5px;
     width: 200px; 
     display: flex; 
     flex-direction: column; 
@@ -237,8 +231,9 @@ function createPopup(x, y, userQuery, columnName, sqlQuery, options, rowValue) {
   const closeButton = document.createElement("button");
   closeButton.textContent = "X";
   closeButton.style.cssText = `
-    align-self: flex-end; margin-bottom: 5px; border: none; background: transparent; cursor: pointer;
+    align-self: flex-end; margin-bottom: 2px; border: none; background: transparent; cursor: pointer;
   `;
+
   closeButton.onclick = () => popup.remove();
 
   popup.appendChild(closeButton);
@@ -261,6 +256,24 @@ function createPopup(x, y, userQuery, columnName, sqlQuery, options, rowValue) {
   });
 
   document.body.appendChild(popup);
+
+  // Measure popup dimensions
+  const popupHeight = popup.offsetHeight;
+  const popupWidth = popup.offsetWidth;
+  const viewportHeight = window.innerHeight;
+  const viewportWidth = window.innerWidth;
+
+  // Calculate vertical position
+  const positionAbove = y + popupHeight > viewportHeight;
+  const adjustedY = positionAbove ? y - popupHeight : y;
+
+  // Calculate horizontal position
+  const positionLeft = x + popupWidth > viewportWidth;
+  const adjustedX = positionLeft ? x - popupWidth : x;
+
+  // Apply final positions
+  popup.style.top = `${adjustedY}px`;
+  popup.style.left = `${adjustedX}px`;
 
   const outsideClickHandler = (e) => {
     if (!popup.contains(e.target)) {
@@ -348,7 +361,6 @@ function transformString(input) {
 }
 
 function nothingToDisplay() {
-  // messageContainer.innerHTML = `<br><br><strong>Nothing to display. Try a different query.</strong>`;
   tableContainer.style.display = "none";
   const goBackButton = document.createElement("button");
   goBackButton.textContent = "<=== Go Back";
