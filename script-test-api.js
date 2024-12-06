@@ -105,6 +105,7 @@ async function visualizeTable(jsonData) {
     metadata_info: rawMetadataInfo,
   } = jsonData;
 
+  console.log(rawMetadataInfo);
   const userQuery = encodeURIComponent(rawUserQuery);
   const sqlQuery = encodeURIComponent(rawSqlQuery);
   const tableData = JSON.parse(rawTableData);
@@ -156,14 +157,15 @@ function generateClickableContent(
   userQuery,
   isHeader = false
 ) {
+  const capitalizedColName = transformString(colName);
   const isClickable = checkIfColumnIsDrillable(colName, metadataInfo);
   if (isClickable) {
     const onclickHandler = `handleColumnClick(event, &quot;${userQuery}&quot;, '${colName}', &quot;${metadataInfo}&quot;, &quot;${sqlQuery}&quot;, &quot;${cellValue}&quot;)`;
     return `<a href="javascript:void(0);" class="clickable" onclick="${onclickHandler}">${
-      isHeader ? colName : cellValue
+      isHeader ? capitalizedColName : cellValue
     }</a>`;
   }
-  return isHeader ? colName : cellValue;
+  return isHeader ? capitalizedColName : cellValue;
 }
 function handleColumnClick(
   event,
@@ -320,4 +322,8 @@ async function fetchDrilledData(
   } finally {
     hideLoadingIndicator();
   }
+}
+
+function transformString(input) {
+  return input.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 }
