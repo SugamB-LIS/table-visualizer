@@ -72,6 +72,7 @@ async function processQuery(userQuery) {
   } catch (error) {
     console.error("Error processing query:", error);
     alert("Error processing query. Please try again.");
+    alert("Error processing query. Please try again.");
   }
 }
 
