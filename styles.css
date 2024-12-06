@@ -14,18 +14,24 @@ button {
   padding: 10px 20px;
   font-size: 16px;
   cursor: pointer;
+  border: 1px solid #ddd;
+}
+
+button:hover {
+  background-color: #ccc;
 }
 
 table {
   width: 100%;
   border-collapse: collapse;
   margin-top: 20px;
+  border: 4px solid #ddd;
 }
 
 th,
 td {
   padding: 12px;
-  text-align: center;
+  text-align: left;
   border: 1px solid #ddd;
 }
 
@@ -35,12 +41,17 @@ th {
 
 td {
   cursor: default;
+  border: 2px solid #f4f4f4;
 }
 
-#sql-query-container {
+#sql-query-container:not(:empty) {
   background-color: #f4f4f4;
   border: 1px solid #ddd;
   padding: 10px;
   overflow: auto;
   white-space: pre-wrap;
+}
+
+#sql-query-container:empty {
+  display: none;
 }

@@ -1,13 +1,13 @@
 const tableContainer = document.getElementById("table-container");
 const sqlQueryContainer = document.getElementById("sql-query-container");
-
+const messageContainer = document.getElementById("message-container");
 let startTime; // Track start time globally
 
 // Show loading indicator with dynamic timer
 function showLoadingIndicator() {
   startTime = Date.now();
-  tableContainer.innerHTML = `<div class="loading-indicator"><br><br>Loading...</div>`;
-
+  messageContainer.innerHTML = `<div class="loading-indicator"><br><br><strong>Loading...</strong></div>`;
+  tableContainer.style.display = "none";
   const updateTime = () => {
     const elapsedTime = Math.floor((Date.now() - startTime) / 1000);
     const minutes = Math.floor(elapsedTime / 60);
@@ -42,12 +42,14 @@ function hideLoadingIndicator() {
       : `${seconds} second${seconds !== 1 ? "s" : ""}`;
 
   console.log(`Data loaded in ${finalTimeText}.`);
-  tableContainer.innerHTML = ""; // Clear the loading message
+  messageContainer.innerHTML = "";
+  tableContainer.style.display = "block";
 }
 
 function clearPreviousState() {
   tableContainer.innerHTML = "";
   sqlQueryContainer.innerHTML = "";
+  messageContainer.innerHTML = "";
   closeExistingPopup();
 }
 
@@ -69,6 +71,7 @@ async function processQuery(userQuery) {
     await initialTableVisualizer(userQuery);
   } catch (error) {
     console.error("Error processing query:", error);
+    alert("Error processing query. Please try again.");
     alert("Error processing query. Please try again.");
   }
 }
@@ -105,13 +108,15 @@ async function visualizeTable(jsonData) {
     metadata_info: rawMetadataInfo,
   } = jsonData;
 
+  console.log(rawMetadataInfo);
   const userQuery = encodeURIComponent(rawUserQuery);
   const sqlQuery = encodeURIComponent(rawSqlQuery);
   const tableData = JSON.parse(rawTableData);
   const metadataInfo = encodeURIComponent(JSON.stringify(rawMetadataInfo));
 
   if (tableData.data.length === 0) {
-    tableContainer.innerHTML = `<br><br><strong>Nothing to display. Try a different query.</strong>`;
+    messageContainer.innerHTML = `<strong>Nothing to display.</strong>`;
+    nothingToDisplay();
     return;
   }
 
@@ -156,14 +161,15 @@ function generateClickableContent(
   userQuery,
   isHeader = false
 ) {
+  const capitalizedColName = transformString(colName);
   const isClickable = checkIfColumnIsDrillable(colName, metadataInfo);
   if (isClickable) {
     const onclickHandler = `handleColumnClick(event, &quot;${userQuery}&quot;, '${colName}', &quot;${metadataInfo}&quot;, &quot;${sqlQuery}&quot;, &quot;${cellValue}&quot;)`;
     return `<a href="javascript:void(0);" class="clickable" onclick="${onclickHandler}">${
-      isHeader ? colName : cellValue
+      isHeader ? capitalizedColName : cellValue
     }</a>`;
   }
-  return isHeader ? colName : cellValue;
+  return isHeader ? capitalizedColName : cellValue;
 }
 function handleColumnClick(
   event,
@@ -206,18 +212,29 @@ function createPopup(x, y, userQuery, columnName, sqlQuery, options, rowValue) {
 
   const popup = document.createElement("div");
   popup.className = "popup";
+
   popup.style.cssText = `
-    position: absolute; top: ${y}px; left: ${x}px; padding: 10px;
-    background: #fff; border: 1px solid #ccc; box-shadow: 0px 4px 6px rgba(0,0,0,0.1);
-    z-index: 1000; width: 200px; display: flex; flex-direction: column;
+    position: absolute; 
+    top: ${y}px; 
+    left: ${x}px; 
+    padding: 10px; 
+    background: #fff; 
+    border: 1px solid #ccc; 
+    box-shadow: 0px 4px 6px rgba(0,0,0,0.1); 
+    z-index: 1000; 
+    padding: 5px;
+    width: 200px; 
+    display: flex; 
+    flex-direction: column; 
     border-radius: 8px;
   `;
 
   const closeButton = document.createElement("button");
   closeButton.textContent = "X";
   closeButton.style.cssText = `
-    align-self: flex-end; margin-bottom: 5px; border: none; background: transparent; cursor: pointer;
+    align-self: flex-end; margin-bottom: 2px; border: none; background: transparent; cursor: pointer;
   `;
+
   closeButton.onclick = () => popup.remove();
 
   popup.appendChild(closeButton);
@@ -240,6 +257,24 @@ function createPopup(x, y, userQuery, columnName, sqlQuery, options, rowValue) {
   });
 
   document.body.appendChild(popup);
+
+  // Measure popup dimensions
+  const popupHeight = popup.offsetHeight;
+  const popupWidth = popup.offsetWidth;
+  const viewportHeight = window.innerHeight;
+  const viewportWidth = window.innerWidth;
+
+  // Calculate vertical position
+  const positionAbove = y + popupHeight > viewportHeight;
+  const adjustedY = positionAbove ? y - popupHeight : y;
+
+  // Calculate horizontal position
+  const positionLeft = x + popupWidth > viewportWidth;
+  const adjustedX = positionLeft ? x - popupWidth : x;
+
+  // Apply final positions
+  popup.style.top = `${adjustedY}px`;
+  popup.style.left = `${adjustedX}px`;
 
   const outsideClickHandler = (e) => {
     if (!popup.contains(e.target)) {
@@ -320,4 +355,24 @@ async function fetchDrilledData(
   } finally {
     hideLoadingIndicator();
   }
+}
+
+function transformString(input) {
+  return input.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+function nothingToDisplay() {
+  tableContainer.style.display = "none";
+  const goBackButton = document.createElement("button");
+  goBackButton.textContent = "<=== Go Back";
+  goBackButton.style.cssText = `
+    align-self: flex-end; margin: 10px 0 0 10px; cursor: pointer;
+  `;
+
+  goBackButton.onclick = () => {
+    messageContainer.innerHTML = "";
+    tableContainer.style.display = "block";
+  };
+
+  messageContainer.appendChild(goBackButton);
 }
