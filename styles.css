@@ -50,6 +50,7 @@ td {
   padding: 10px;
   overflow: auto;
   white-space: pre-wrap;
+  margin-bottom: 20px;
 }
 
 #sql-query-container:empty {

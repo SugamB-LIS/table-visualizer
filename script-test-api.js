@@ -331,6 +331,17 @@ async function fetchDrilledData(
   sqlQuery,
   rowValue
 ) {
+  rowValue
+    ? console.log(
+        "columnValue: ",
+        columnName,
+        "rowValue: ",
+        rowValue,
+        "buttonName: ",
+        buttonName
+      )
+    : console.log("columnValue: ", columnName, "buttonName: ", buttonName);
+
   showLoadingIndicator();
   try {
     const response = await fetch("http://127.0.0.1:8000/perform-drilling", {
