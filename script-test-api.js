@@ -78,6 +78,7 @@ async function processQuery(userQuery) {
 
 async function initialTableVisualizer(userQuery) {
   const jsonData = await fetchInitialData(userQuery);
+  logger.addPlaceholderLog("First Fetch", jsonData.sql_query);
   visualizeTable(jsonData);
 }
 
@@ -109,11 +110,13 @@ async function visualizeTable(jsonData) {
   } = jsonData;
 
   console.log(rawMetadataInfo);
+  logger.logAll();
+
   const userQuery = encodeURIComponent(rawUserQuery);
   const sqlQuery = encodeURIComponent(rawSqlQuery);
   const tableData = JSON.parse(rawTableData);
   const metadataInfo = encodeURIComponent(JSON.stringify(rawMetadataInfo));
-
+  console.log("rawSqlQuery:", rawSqlQuery);
   if (tableData.data.length === 0) {
     messageContainer.innerHTML = `<strong>Nothing to display.</strong>`;
     nothingToDisplay();
@@ -180,7 +183,6 @@ function handleColumnClick(
   rowValue
 ) {
   event.preventDefault();
-
   try {
     metadataInfo = JSON.parse(decodeURIComponent(metadataInfo));
   } catch (err) {
@@ -314,6 +316,15 @@ async function drilledTableVisualizer(
   sqlQuery,
   rowValue
 ) {
+  const logEntry = logger.addPlaceholderLog(
+    `Clicked ${buttonName} on ${
+      rowValue
+        ? `Row Value: Header: ${columnName}, rowValue: ${rowValue}`
+        : `Header:${columnName}`
+    }`,
+    sqlQuery
+  );
+
   const jsonData = await fetchDrilledData(
     userQuery,
     buttonName,
@@ -321,6 +332,8 @@ async function drilledTableVisualizer(
     sqlQuery,
     rowValue
   );
+  logger.updateLogSql(logEntry, jsonData.sql_query);
+
   visualizeTable(jsonData);
 }
 
@@ -331,17 +344,6 @@ async function fetchDrilledData(
   sqlQuery,
   rowValue
 ) {
-  rowValue
-    ? console.log(
-        "columnValue: ",
-        columnName,
-        "rowValue: ",
-        rowValue,
-        "buttonName: ",
-        buttonName
-      )
-    : console.log("columnValue: ", columnName, "buttonName: ", buttonName);
-
   showLoadingIndicator();
   try {
     const response = await fetch("http://127.0.0.1:8000/perform-drilling", {
@@ -387,3 +389,24 @@ function nothingToDisplay() {
 
   messageContainer.appendChild(goBackButton);
 }
+
+const logger = {
+  logs: [],
+  // Add a placeholder log before fetching drilled data
+  addPlaceholderLog(title, initialSqlQuery) {
+    const logEntry = { title, sql: initialSqlQuery };
+    this.logs.push(logEntry);
+    return logEntry;
+  },
+  // Update the SQL query of a specific log entry
+  updateLogSql(logEntry, updatedSqlQuery) {
+    logEntry.sql = updatedSqlQuery;
+  },
+  // Access and log all entries
+  logAll() {
+    console.log("Logger Data:");
+    this.logs.forEach((log, index) => {
+      console.log(`Log ${index + 1}: ${log.title}, SQL: ${log.sql}`);
+    });
+  },
+};
