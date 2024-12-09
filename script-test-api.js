@@ -323,7 +323,7 @@ async function drilledTableVisualizer(
     `${buttonName} on ${
       rowValue
         ? `Row Value: ${capitalizedRowValue} | Header: ${capitalizedColName}`
-        : `Header:${capitalizedColName}`
+        : `Header: ${capitalizedColName}`
     }`,
     sqlQuery
   );
@@ -388,6 +388,7 @@ function nothingToDisplay() {
   goBackButton.onclick = () => {
     messageContainer.innerHTML = "";
     tableContainer.style.display = "block";
+    logger.logs.pop();
   };
 
   messageContainer.appendChild(goBackButton);
@@ -407,7 +408,6 @@ const logger = {
   },
   // Access and log all entries
   logAll() {
-    console.log("Logger Data:");
     this.logs.forEach((log, index) => {
       console.log(`Log ${index + 1}: ${log.title}, SQL: ${log.sql}`);
     });
@@ -426,6 +426,7 @@ function renderAccordionFromLogger() {
   accordion.style.cssText = `
       border: 1px solid #ddd;
       border-radius: 5px;
+      margin: 10px;
       overflow: hidden;
       box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.1);
   `;
@@ -438,7 +439,7 @@ function renderAccordionFromLogger() {
 
     // Accordion Title
     const title = document.createElement("div");
-    title.textContent = entry.title;
+    title.textContent = index + 1 + ": " + entry.title;
     title.style.cssText = `
           padding: 10px;
           cursor: pointer;
@@ -449,20 +450,13 @@ function renderAccordionFromLogger() {
       const content = accordionItem.querySelector(".accordion-content");
       const isVisible = content.style.display === "block";
       content.style.display = isVisible ? "none" : "block";
-
-      // Only the last accordion item should be opened and other should be closed by default
-      for (const otherItem of accordion.children) {
-        if (otherItem !== accordionItem) {
-          otherItem.querySelector(".accordion-content").style.display = "none";
-        }
-      }
     };
 
     // Accordion Content
     const content = document.createElement("div");
     content.className = "accordion-content";
     content.style.cssText = `
-          display: ${index === logger.logs.length - 1 ? "block" : "none"};
+          display: none;
           padding: 10px;
           background-color: #fff;
           border-top: 1px solid #ddd;
