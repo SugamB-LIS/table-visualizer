@@ -116,7 +116,7 @@ async function visualizeTable(jsonData) {
   const sqlQuery = encodeURIComponent(rawSqlQuery);
   const tableData = JSON.parse(rawTableData);
   const metadataInfo = encodeURIComponent(JSON.stringify(rawMetadataInfo));
-  console.log("rawSqlQuery:", rawSqlQuery);
+
   if (tableData.data.length === 0) {
     messageContainer.innerHTML = `<strong>Nothing to display.</strong>`;
     nothingToDisplay();
@@ -154,6 +154,7 @@ async function visualizeTable(jsonData) {
   tableHtml += "</tbody></table>";
   tableContainer.innerHTML = tableHtml;
   sqlQueryContainer.innerHTML = `<pre>${rawSqlQuery}</pre>`;
+  renderAccordionFromLogger();
 }
 
 function generateClickableContent(
@@ -316,11 +317,13 @@ async function drilledTableVisualizer(
   sqlQuery,
   rowValue
 ) {
+  const capitalizedColName = transformString(columnName);
+  const capitalizedRowValue = transformString(rowValue);
   const logEntry = logger.addPlaceholderLog(
-    `Clicked ${buttonName} on ${
+    `${buttonName} on ${
       rowValue
-        ? `Row Value: Header: ${columnName}, rowValue: ${rowValue}`
-        : `Header:${columnName}`
+        ? `Row Value: ${capitalizedRowValue} | Header: ${capitalizedColName}`
+        : `Header:${capitalizedColName}`
     }`,
     sqlQuery
   );
@@ -410,3 +413,69 @@ const logger = {
     });
   },
 };
+
+function renderAccordionFromLogger() {
+  sqlQueryContainer.innerHTML = "";
+
+  if (logger.logs.length === 0) {
+    sqlQueryContainer.innerHTML = "<strong>No queries logged yet.</strong>";
+    return;
+  }
+
+  const accordion = document.createElement("div"); // Container for accordion
+  accordion.style.cssText = `
+      border: 1px solid #ddd;
+      border-radius: 5px;
+      overflow: hidden;
+      box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.1);
+  `;
+
+  logger.logs.forEach((entry, index) => {
+    const accordionItem = document.createElement("div");
+    accordionItem.style.cssText = `
+          border-bottom: 2px solid #ddd;
+      `;
+
+    // Accordion Title
+    const title = document.createElement("div");
+    title.textContent = entry.title;
+    title.style.cssText = `
+          padding: 10px;
+          cursor: pointer;
+          background-color: #f9f9f9;
+          font-weight: bold;
+      `;
+    title.onclick = () => {
+      const content = accordionItem.querySelector(".accordion-content");
+      const isVisible = content.style.display === "block";
+      content.style.display = isVisible ? "none" : "block";
+
+      // Only the last accordion item should be opened and other should be closed by default
+      for (const otherItem of accordion.children) {
+        if (otherItem !== accordionItem) {
+          otherItem.querySelector(".accordion-content").style.display = "none";
+        }
+      }
+    };
+
+    // Accordion Content
+    const content = document.createElement("div");
+    content.className = "accordion-content";
+    content.style.cssText = `
+          display: ${index === logger.logs.length - 1 ? "block" : "none"};
+          padding: 10px;
+          background-color: #fff;
+          border-top: 1px solid #ddd;
+          white-space: pre-wrap;
+          overflow: auto;
+      `;
+    content.textContent = entry.sql;
+
+    // Append to accordion item
+    accordionItem.appendChild(title);
+    accordionItem.appendChild(content);
+    accordion.appendChild(accordionItem);
+  });
+
+  sqlQueryContainer.appendChild(accordion);
+}
