@@ -72,7 +72,6 @@ async function processQuery(userQuery) {
   } catch (error) {
     console.error("Error processing query:", error);
     alert("Error processing query. Please try again.");
-    alert("Error processing query. Please try again.");
   }
 }
 
@@ -184,30 +183,39 @@ function handleColumnClick(
   rowValue
 ) {
   event.preventDefault();
+
+  let parsedMetadata;
   try {
-    metadataInfo = JSON.parse(decodeURIComponent(metadataInfo));
+    parsedMetadata = JSON.parse(decodeURIComponent(metadataInfo));
   } catch (err) {
     console.error("Error parsing metadataInfo:", err);
-    alert("Error parsing metadataInfo");
+    alert("Invalid metadata information.");
     return;
   }
 
-  const options = getDrillOptions(columnName, metadataInfo);
-  if (!options.length) {
+  const options = getDrillOptions(columnName, parsedMetadata);
+  if (options.length === 1) {
+    drilledTableVisualizer(
+      userQuery,
+      "Drill Down",
+      columnName,
+      decodeURIComponent(sqlQuery),
+      rowValue
+    );
+  } else if (options.length === 0) {
     console.warn("No drill options available for column:", columnName);
-    alert("No drill options available for column: " + columnName);
-    return;
+    alert(`No drill options available for column: ${columnName}`);
+  } else {
+    createPopup(
+      event.pageX,
+      event.pageY,
+      userQuery,
+      columnName,
+      sqlQuery,
+      options,
+      rowValue
+    );
   }
-
-  createPopup(
-    event.pageX,
-    event.pageY,
-    userQuery,
-    columnName,
-    sqlQuery,
-    options,
-    rowValue
-  );
 }
 
 function createPopup(x, y, userQuery, columnName, sqlQuery, options, rowValue) {
