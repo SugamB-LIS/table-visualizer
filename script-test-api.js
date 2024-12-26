@@ -135,11 +135,11 @@ async function checkQueuePolling(queueId) {
       }, 1000);
     } else {
       console.log("Data fetched:\n");
-      console.log("Query:", data.query);
-      console.log("sqlQuery:", data.sql_query);
-      console.log("explanation:", data.explanation);
-      console.log("table", data.table);
-      console.log("drillable_columns", data.drillable_columns);
+      console.log("Query:", data.data.query);
+      console.log("sqlQuery:", data.data.sql_query);
+      console.log("explanation:", data.data.explanation);
+      console.log("table", data.data.table);
+      console.log("drillable_columns", data.data.drillable_columns);
     }
   } catch (error) {
     console.error("Error when Queue Polling:", error);
