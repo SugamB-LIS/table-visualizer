@@ -1,6 +1,6 @@
 const backendBaseUrl = "https://dev-inteliome.yco.com.np/backend/api/v1";
 const jwtToken =
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzM1MjAxMDAxLCJpYXQiOjE3MzUxODY2MDEsImp0aSI6IjUxODA2NDUyMWJhZTQwN2ZhODE4NzY1ZDBiOGRlZDUzIiwidXNlcl9pZCI6Ijk1NzRmMmY1LTQ1NjYtNGI4ZS1iNzE5LTRiZWI5MzBmZDEzOCIsInJvbGVzIjpbIlVTRVIiXSwidXNlcm5hbWUiOiJuaXNhbjEyMyJ9.oChmqI2SUWUCLQbxlQnUy-_x91dFAD5uIplbXOBjMhg";
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzM1MjE1NTAyLCJpYXQiOjE3MzUyMDExMDIsImp0aSI6ImE0ZDJmZTdjMDQ0YTQ4MzFiY2Q1ZjcyMjAwNzZmODI5IiwidXNlcl9pZCI6Ijk1NzRmMmY1LTQ1NjYtNGI4ZS1iNzE5LTRiZWI5MzBmZDEzOCIsInJvbGVzIjpbIlVTRVIiXSwidXNlcm5hbWUiOiJuaXNhbjEyMyJ9.xplC2AfmvjU26EUjSKyKLq3wt93SeKgRomXXEllD9Rw";
 const chatId = "fa7e2df2-efaf-4ccd-ba6f-d564916d00d2";
 const conversationId = "ebc97c10-a778-4b19-a153-ad6da04a44af";
 
@@ -89,7 +89,10 @@ async function initialTableVisualizer(userQuery) {
   try {
     const jsonData = await checkQueuePolling(queueId);
     console.log("\n\njsonData:", jsonData);
-    logger.addPlaceholderLog("First Fetch", jsonData.data.sql_query);
+    logger.addPlaceholderLog(
+      "First Fetch",
+      jsonData.data.sql_query + "\n\nEXPLANATION:\n" + jsonData.data.explanation
+    );
     visualizeTable(jsonData);
   } catch (error) {
     console.error("Failed to visualize table:", error);
@@ -159,26 +162,29 @@ async function visualizeTable(jsonData) {
   const {
     query: rawUserQuery,
     sql_query: rawSqlQuery,
-    explanation: rawExplanation,
+    // explanation: rawExplanation,
     table: rawTableData,
     drillable_columns: rawDrillableColumns,
   } = jsonData.data;
   console.log("visualizeTable");
   // console.log(rawMetadataInfo);
   logger.logAll();
-  console.log("rawuserQuery:", rawUserQuery);
-  console.log("rawSqlQuery:", rawSqlQuery);
-  console.log("rawExplanation:", rawExplanation);
-  console.log("rawTableData:", rawTableData);
-  console.log("rawDrillableColumns", rawDrillableColumns);
+  // console.log("rawuserQuery:", rawUserQuery);
+  // console.log("rawSqlQuery:", rawSqlQuery);
+  // console.log("rawExplanation:", rawExplanation);
+  // console.log("rawTableData:", rawTableData);
+  // console.log("rawDrillableColumns", rawDrillableColumns);
 
   const userQuery = encodeURIComponent(rawUserQuery);
   const sqlQuery = encodeURIComponent(rawSqlQuery);
   const tableData = JSON.parse(rawTableData);
   const metadataInfo = encodeURIComponent(JSON.stringify(rawDrillableColumns));
   console.log("metadataInfo:", metadataInfo);
+  console.log("tableData:", tableData);
 
+  console.log("tableData length is: ", tableData.data.length);
   if (tableData.data.length === 0) {
+    console.log("Nothing to display. length is: ", tableData.data.length);
     messageContainer.innerHTML = `<strong>Nothing to display.</strong>`;
     nothingToDisplay();
     return;
@@ -186,6 +192,7 @@ async function visualizeTable(jsonData) {
 
   let tableHtml = "<table><thead><tr>";
   tableData.schema.fields.forEach((col) => {
+    console.log("col:", col);
     tableHtml += `<th>${generateClickableContent(
       col.name,
       "",
@@ -226,8 +233,10 @@ function generateClickableContent(
   userQuery,
   isHeader = false
 ) {
-  const capitalizedColName = transformString(colName);
+  console.log("Generating clickable content");
+  const capitalizedColName = capitalizeString(colName);
   const isClickable = checkIfColumnIsDrillable(colName, metadataInfo);
+  console.log("isClickable:", isClickable);
   if (isClickable) {
     const onclickHandler = `handleColumnClick(event, &quot;${userQuery}&quot;, '${colName}', &quot;${metadataInfo}&quot;, &quot;${sqlQuery}&quot;, &quot;${cellValue}&quot;)`;
     return `<a href="javascript:void(0);" class="clickable" onclick="${onclickHandler}">${
@@ -362,22 +371,42 @@ function createPopup(x, y, userQuery, columnName, sqlQuery, options, rowValue) {
 }
 
 function checkIfColumnIsDrillable(columnName, metadataInfo) {
-  metadataInfo = JSON.parse(decodeURIComponent(metadataInfo));
-  if (!metadataInfo) return false;
-  return Object.values(metadataInfo).some((group) =>
-    group.some((col) => col.column_name === columnName)
-  );
-}
-function getDrillOptions(columnName, metadataInfo) {
-  const column = Object.values(metadataInfo)
-    .flat()
-    .find((col) => col.column_name === columnName);
+  console.log("before parsing:", metadataInfo);
 
-  return column
-    ? column.drill_across
-      ? ["Drill Down", "Drill Across"]
-      : ["Drill Down"]
-    : [];
+  // Parse metadataInfo
+  metadataInfo = JSON.parse(decodeURIComponent(metadataInfo));
+  console.log("checkIfColumnIsDrillable: ", metadataInfo);
+
+  // Ensure metadataInfo is properly parsed
+  if (!Array.isArray(metadataInfo)) {
+    console.error("Expected metadataInfo to be an array");
+    return false;
+  }
+
+  // Check if column is drillable
+  return metadataInfo.some((col) => col.column === columnName);
+}
+
+function getDrillOptions(columnName, metadataInfo) {
+  console.log("columnName", columnName);
+  console.log("metadataInfo: ", metadataInfo);
+
+  // Flatten metadataInfo and find the column
+  const column = metadataInfo.find((col) => {
+    // console.log(
+    //   "col:",
+    //   col,
+    //   "\ncol.column:",
+    //   col.column,
+    //   "\ncolumnName:",
+    //   columnName
+    // );
+    return col.column === columnName;
+  });
+  // console.log("column:", column);
+
+  // Return appropriate drill options
+  return column ? column.drill_types.map(capitalizeString) : [];
 }
 
 async function drilledTableVisualizer(
@@ -387,8 +416,8 @@ async function drilledTableVisualizer(
   sqlQuery,
   rowValue
 ) {
-  const capitalizedColName = transformString(columnName);
-  const capitalizedRowValue = transformString(rowValue);
+  const capitalizedColName = capitalizeString(columnName);
+  const capitalizedRowValue = capitalizeString(rowValue);
   const logEntry = logger.addPlaceholderLog(
     `${buttonName} on ${
       rowValue
@@ -444,8 +473,12 @@ async function fetchDrilledData(
   }
 }
 
-function transformString(input) {
-  return input.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+function capitalizeString(input) {
+  const capitalizedString = input
+    .replace(/_/g, " ")
+    .replace(/\b\w/g, (c) => c.toUpperCase());
+  console.log("input: ", input, " capitalized to: ", capitalizedString);
+  return capitalizedString;
 }
 
 function nothingToDisplay() {
