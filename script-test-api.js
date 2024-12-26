@@ -1,3 +1,9 @@
+const backendBaseUrl = "https://dev-inteliome.yco.com.np/backend/api/v1";
+const jwtToken =
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzM1MjAxMDAxLCJpYXQiOjE3MzUxODY2MDEsImp0aSI6IjUxODA2NDUyMWJhZTQwN2ZhODE4NzY1ZDBiOGRlZDUzIiwidXNlcl9pZCI6Ijk1NzRmMmY1LTQ1NjYtNGI4ZS1iNzE5LTRiZWI5MzBmZDEzOCIsInJvbGVzIjpbIlVTRVIiXSwidXNlcm5hbWUiOiJuaXNhbjEyMyJ9.oChmqI2SUWUCLQbxlQnUy-_x91dFAD5uIplbXOBjMhg";
+const chatId = "fa7e2df2-efaf-4ccd-ba6f-d564916d00d2";
+const conversationId = "ebc97c10-a778-4b19-a153-ad6da04a44af";
+
 const tableContainer = document.getElementById("table-container");
 const sqlQueryContainer = document.getElementById("sql-query-container");
 const messageContainer = document.getElementById("message-container");
@@ -84,16 +90,59 @@ async function initialTableVisualizer(userQuery) {
 async function fetchInitialData(userQuery) {
   showLoadingIndicator();
   try {
-    const response = await fetch("http://127.0.0.1:8000/fetch-data", {
-      method: "POST",
-      headers: { "Content-Type": "application/json; charset=utf-8" },
-      body: JSON.stringify({ user_query: userQuery }),
-    });
+    const response = await fetch(
+      `${backendBaseUrl}/chat-sessions/${chatId}/ask/`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${jwtToken}`,
+          "Content-Type": "application/json; charset=utf-8",
+        },
+        body: JSON.stringify({ query: userQuery }),
+      }
+    );
 
     const data = await response.json();
+    console.log("fetch data:", data.data);
+    await checkQueuePolling(data.data);
     return data;
   } catch (error) {
     console.error("Error fetching data:", error);
+    throw error;
+  } finally {
+    checkQueuePolling(data.data);
+    hideLoadingIndicator();
+  }
+}
+
+// Queue messages: PENDING, FAILED, SUCCESS
+async function checkQueuePolling(queueId) {
+  console.log("Checking queue:", queueId);
+  try {
+    const response = await fetch(`${backendBaseUrl}/check-queue/${queueId}/`, {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${jwtToken}`,
+        "Content-Type": "application/json; charset=utf-8",
+      },
+    });
+
+    const data = await response.json();
+    // console.log("queue data:", data);
+    if (data.message === "PENDING") {
+      setTimeout(() => {
+        checkQueuePolling(queueId);
+      }, 1000);
+    } else {
+      console.log("Data fetched:\n");
+      console.log("Query:", data.query);
+      console.log("sqlQuery:", data.sql_query);
+      console.log("explanation:", data.explanation);
+      console.log("table", data.table);
+      console.log("drillable_columns", data.drillable_columns);
+    }
+  } catch (error) {
+    console.error("Error when Queue Polling:", error);
     throw error;
   } finally {
     hideLoadingIndicator();
@@ -357,6 +406,7 @@ async function fetchDrilledData(
 ) {
   showLoadingIndicator();
   try {
+    // `${backendBaseUrl}/chat-sessions/${chatId}/ask/${conversationId}/`,
     const response = await fetch("http://127.0.0.1:8000/perform-drilling", {
       method: "POST",
       headers: { "Content-Type": "application/json; charset=utf-8" },
