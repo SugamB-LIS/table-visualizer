@@ -84,7 +84,6 @@ async function processQuery(userQuery) {
 async function initialTableVisualizer(userQuery) {
   const queueData = await fetchInitialData(userQuery);
   const queueId = queueData.data;
-  console.log("queueId:", queueId);
 
   try {
     const jsonData = await checkQueuePolling(queueId);
@@ -162,29 +161,18 @@ async function visualizeTable(jsonData) {
   const {
     query: rawUserQuery,
     sql_query: rawSqlQuery,
-    // explanation: rawExplanation,
     table: rawTableData,
     drillable_columns: rawDrillableColumns,
   } = jsonData.data;
-  console.log("visualizeTable");
-  // console.log(rawMetadataInfo);
   logger.logAll();
-  // console.log("rawuserQuery:", rawUserQuery);
-  // console.log("rawSqlQuery:", rawSqlQuery);
-  // console.log("rawExplanation:", rawExplanation);
-  // console.log("rawTableData:", rawTableData);
-  // console.log("rawDrillableColumns", rawDrillableColumns);
 
   const userQuery = encodeURIComponent(rawUserQuery);
   const sqlQuery = encodeURIComponent(rawSqlQuery);
   const tableData = JSON.parse(rawTableData);
   const metadataInfo = encodeURIComponent(JSON.stringify(rawDrillableColumns));
-  console.log("metadataInfo:", metadataInfo);
-  console.log("tableData:", tableData);
 
   console.log("tableData length is: ", tableData.data.length);
   if (tableData.data.length === 0) {
-    console.log("Nothing to display. length is: ", tableData.data.length);
     messageContainer.innerHTML = `<strong>Nothing to display.</strong>`;
     nothingToDisplay();
     return;
@@ -192,7 +180,6 @@ async function visualizeTable(jsonData) {
 
   let tableHtml = "<table><thead><tr>";
   tableData.schema.fields.forEach((col) => {
-    console.log("col:", col);
     tableHtml += `<th>${generateClickableContent(
       col.name,
       "",
@@ -233,10 +220,8 @@ function generateClickableContent(
   userQuery,
   isHeader = false
 ) {
-  console.log("Generating clickable content");
   const capitalizedColName = capitalizeString(colName);
   const isClickable = checkIfColumnIsDrillable(colName, metadataInfo);
-  console.log("isClickable:", isClickable);
   if (isClickable) {
     const onclickHandler = `handleColumnClick(event, &quot;${userQuery}&quot;, '${colName}', &quot;${metadataInfo}&quot;, &quot;${sqlQuery}&quot;, &quot;${cellValue}&quot;)`;
     return `<a href="javascript:void(0);" class="clickable" onclick="${onclickHandler}">${
@@ -371,41 +356,22 @@ function createPopup(x, y, userQuery, columnName, sqlQuery, options, rowValue) {
 }
 
 function checkIfColumnIsDrillable(columnName, metadataInfo) {
-  console.log("before parsing:", metadataInfo);
-
-  // Parse metadataInfo
   metadataInfo = JSON.parse(decodeURIComponent(metadataInfo));
-  console.log("checkIfColumnIsDrillable: ", metadataInfo);
-
-  // Ensure metadataInfo is properly parsed
   if (!Array.isArray(metadataInfo)) {
     console.error("Expected metadataInfo to be an array");
     return false;
   }
-
   // Check if column is drillable
   return metadataInfo.some((col) => col.column === columnName);
 }
 
 function getDrillOptions(columnName, metadataInfo) {
-  console.log("columnName", columnName);
-  console.log("metadataInfo: ", metadataInfo);
-
   // Flatten metadataInfo and find the column
   const column = metadataInfo.find((col) => {
-    // console.log(
-    //   "col:",
-    //   col,
-    //   "\ncol.column:",
-    //   col.column,
-    //   "\ncolumnName:",
-    //   columnName
-    // );
     return col.column === columnName;
   });
-  // console.log("column:", column);
 
-  // Return appropriate drill options
+  // Return appropriate drill options after transforming them
   return column ? column.drill_types.map(capitalizeString) : [];
 }
 
@@ -477,7 +443,6 @@ function capitalizeString(input) {
   const capitalizedString = input
     .replace(/_/g, " ")
     .replace(/\b\w/g, (c) => c.toUpperCase());
-  console.log("input: ", input, " capitalized to: ", capitalizedString);
   return capitalizedString;
 }
 
