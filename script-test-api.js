@@ -82,9 +82,18 @@ async function processQuery(userQuery) {
 }
 
 async function initialTableVisualizer(userQuery) {
-  const jsonData = await fetchInitialData(userQuery);
-  logger.addPlaceholderLog("First Fetch", jsonData.sql_query);
-  visualizeTable(jsonData);
+  const queueData = await fetchInitialData(userQuery);
+  const queueId = queueData.data;
+  console.log("queueId:", queueId);
+
+  try {
+    const jsonData = await checkQueuePolling(queueId);
+    console.log("\n\njsonData:", jsonData);
+    logger.addPlaceholderLog("First Fetch", jsonData.data.sql_query);
+    visualizeTable(jsonData);
+  } catch (error) {
+    console.error("Failed to visualize table:", error);
+  }
 }
 
 async function fetchInitialData(userQuery) {
@@ -103,21 +112,22 @@ async function fetchInitialData(userQuery) {
     );
 
     const data = await response.json();
-    console.log("fetch data:", data.data);
-    await checkQueuePolling(data.data);
+    // const queueId = queueData.data;
+    // const data = await checkQueuePolling(queueId);
     return data;
   } catch (error) {
     console.error("Error fetching data:", error);
     throw error;
   } finally {
-    checkQueuePolling(data.data);
-    hideLoadingIndicator();
+    // checkQueuePolling(data.data);
+    // hideLoadingIndicator();
   }
 }
 
 // Queue messages: PENDING, FAILED, SUCCESS
 async function checkQueuePolling(queueId) {
   console.log("Checking queue:", queueId);
+
   try {
     const response = await fetch(`${backendBaseUrl}/check-queue/${queueId}/`, {
       method: "GET",
@@ -128,42 +138,45 @@ async function checkQueuePolling(queueId) {
     });
 
     const data = await response.json();
-    // console.log("queue data:", data);
+    // If the queue is still pending, wait and poll again
     if (data.message === "PENDING") {
-      setTimeout(() => {
-        checkQueuePolling(queueId);
-      }, 1000);
-    } else {
-      console.log("Data fetched:\n");
-      console.log("Query:", data.data.query);
-      console.log("sqlQuery:", data.data.sql_query);
-      console.log("explanation:", data.data.explanation);
-      console.log("table", data.data.table);
-      console.log("drillable_columns", data.data.drillable_columns);
+      console.log("Queue is pending. Retrying...");
+      await new Promise((resolve) => setTimeout(resolve, 1000)); // Pause execution for 1 second
+      return await checkQueuePolling(queueId); // Recursively poll
     }
+
+    // If not pending, return the data
+    console.log("Data fetched:", data.message);
+    hideLoadingIndicator();
+    return data;
   } catch (error) {
     console.error("Error when Queue Polling:", error);
     throw error;
-  } finally {
-    hideLoadingIndicator();
   }
 }
 
 async function visualizeTable(jsonData) {
   const {
-    user_query: rawUserQuery,
+    query: rawUserQuery,
     sql_query: rawSqlQuery,
-    results: rawTableData,
-    metadata_info: rawMetadataInfo,
-  } = jsonData;
-
-  console.log(rawMetadataInfo);
+    explanation: rawExplanation,
+    table: rawTableData,
+    drillable_columns: rawDrillableColumns,
+  } = jsonData.data;
+  console.log("visualizeTable");
+  // console.log(rawMetadataInfo);
   logger.logAll();
+  console.log("rawuserQuery:", rawUserQuery);
+  console.log("rawSqlQuery:", rawSqlQuery);
+  console.log("rawExplanation:", rawExplanation);
+  console.log("rawTableData:", rawTableData);
+  console.log("rawDrillableColumns", rawDrillableColumns);
 
   const userQuery = encodeURIComponent(rawUserQuery);
   const sqlQuery = encodeURIComponent(rawSqlQuery);
   const tableData = JSON.parse(rawTableData);
-  const metadataInfo = encodeURIComponent(JSON.stringify(rawMetadataInfo));
+  const metadataInfo = encodeURIComponent(JSON.stringify(rawDrillableColumns));
+  console.log("metadataInfo:", metadataInfo);
 
   if (tableData.data.length === 0) {
     messageContainer.innerHTML = `<strong>Nothing to display.</strong>`;
