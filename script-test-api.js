@@ -8,6 +8,7 @@ const tableContainer = document.getElementById("table-container");
 const sqlQueryContainer = document.getElementById("sql-query-container");
 const messageContainer = document.getElementById("message-container");
 let startTime; // Track start time globally
+let firstColumnName; //Track the first column name that was clicked
 
 // Show loading indicator with dynamic timer
 function showLoadingIndicator() {
@@ -53,10 +54,12 @@ function hideLoadingIndicator() {
 }
 
 function clearPreviousState() {
+  console.clear();
   tableContainer.innerHTML = "";
   sqlQueryContainer.innerHTML = "";
   messageContainer.innerHTML = "";
   closeExistingPopup();
+  logger.logs = []; // Clear all logs
 }
 
 function closeExistingPopup() {
@@ -93,6 +96,7 @@ async function initialTableVisualizer(userQuery) {
       jsonData.data.sql_query + "\n\nEXPLANATION:\n" + jsonData.data.explanation
     );
     visualizeTable(jsonData);
+    // console.clear();
   } catch (error) {
     console.error("Failed to visualize table:", error);
   }
@@ -114,15 +118,10 @@ async function fetchInitialData(userQuery) {
     );
 
     const data = await response.json();
-    // const queueId = queueData.data;
-    // const data = await checkQueuePolling(queueId);
     return data;
   } catch (error) {
     console.error("Error fetching data:", error);
     throw error;
-  } finally {
-    // checkQueuePolling(data.data);
-    // hideLoadingIndicator();
   }
 }
 
@@ -157,13 +156,22 @@ async function checkQueuePolling(queueId) {
   }
 }
 
-async function visualizeTable(jsonData) {
-  const {
-    query: rawUserQuery,
-    sql_query: rawSqlQuery,
-    table: rawTableData,
-    drillable_columns: rawDrillableColumns,
-  } = jsonData.data;
+async function visualizeTable(jsonData, drilling = false) {
+  let rawUserQuery, rawSqlQuery, rawTableData, rawDrillableColumns;
+  const resolvedData = jsonData.data;
+  // object keys are different based on first fetch or drilling api call
+  if (drilling) {
+    rawUserQuery = resolvedData.user_query;
+    rawSqlQuery = resolvedData.sql_query;
+    rawTableData = resolvedData.results;
+    rawDrillableColumns = resolvedData.drillable_columns;
+  } else {
+    rawUserQuery = resolvedData.query;
+    rawSqlQuery = resolvedData.sql_query;
+    rawTableData = resolvedData.table;
+    rawDrillableColumns = resolvedData.drillable_columns;
+  }
+
   logger.logAll();
 
   const userQuery = encodeURIComponent(rawUserQuery);
@@ -220,7 +228,7 @@ function generateClickableContent(
   userQuery,
   isHeader = false
 ) {
-  const capitalizedColName = capitalizeString(colName);
+  const capitalizedColName = upperCaseString(colName);
   const isClickable = checkIfColumnIsDrillable(colName, metadataInfo);
   if (isClickable) {
     const onclickHandler = `handleColumnClick(event, &quot;${userQuery}&quot;, '${colName}', &quot;${metadataInfo}&quot;, &quot;${sqlQuery}&quot;, &quot;${cellValue}&quot;)`;
@@ -250,28 +258,20 @@ function handleColumnClick(
   }
 
   const options = getDrillOptions(columnName, parsedMetadata);
-  if (options.length === 1) {
-    drilledTableVisualizer(
-      userQuery,
-      "Drill Down",
-      columnName,
-      decodeURIComponent(sqlQuery),
-      rowValue
-    );
-  } else if (options.length === 0) {
+  if (options.length === 0) {
     console.warn("No drill options available for column:", columnName);
     alert(`No drill options available for column: ${columnName}`);
-  } else {
-    createPopup(
-      event.pageX,
-      event.pageY,
-      userQuery,
-      columnName,
-      sqlQuery,
-      options,
-      rowValue
-    );
   }
+
+  createPopup(
+    event.pageX,
+    event.pageY,
+    userQuery,
+    columnName,
+    sqlQuery,
+    options,
+    rowValue
+  );
 }
 
 function createPopup(x, y, userQuery, columnName, sqlQuery, options, rowValue) {
@@ -311,6 +311,7 @@ function createPopup(x, y, userQuery, columnName, sqlQuery, options, rowValue) {
     button.textContent = option;
     button.style.marginTop = "5px";
     button.onclick = async () => {
+      firstColumnName = firstColumnName ? firstColumnName : columnName;
       drilledTableVisualizer(
         userQuery,
         option,
@@ -372,7 +373,7 @@ function getDrillOptions(columnName, metadataInfo) {
   });
 
   // Return appropriate drill options after transforming them
-  return column ? column.drill_types.map(capitalizeString) : [];
+  return column ? column.drill_types.map(upperCaseString) : [];
 }
 
 async function drilledTableVisualizer(
@@ -382,8 +383,9 @@ async function drilledTableVisualizer(
   sqlQuery,
   rowValue
 ) {
-  const capitalizedColName = capitalizeString(columnName);
-  const capitalizedRowValue = capitalizeString(rowValue);
+  console.log("drilledTableVisualizer: ", buttonName);
+  const capitalizedColName = upperCaseString(columnName);
+  const capitalizedRowValue = upperCaseString(rowValue);
   const logEntry = logger.addPlaceholderLog(
     `${buttonName} on ${
       rowValue
@@ -392,17 +394,31 @@ async function drilledTableVisualizer(
     }`,
     sqlQuery
   );
-
-  const jsonData = await fetchDrilledData(
+  console.log(
+    `${buttonName} on ${
+      rowValue
+        ? `Row Value: ${capitalizedRowValue} | Header: ${capitalizedColName}`
+        : `Header: ${capitalizedColName}`
+    }`
+  );
+  const queueData = await fetchDrilledData(
     userQuery,
     buttonName,
     columnName,
     sqlQuery,
     rowValue
   );
-  logger.updateLogSql(logEntry, jsonData.sql_query);
 
-  visualizeTable(jsonData);
+  const queueId = queueData.data;
+
+  try {
+    const jsonData = await checkQueuePolling(queueId);
+    console.log("\n\njsonData:", jsonData);
+    logger.updateLogSql(logEntry, jsonData.data.sql_query);
+    visualizeTable(jsonData, true);
+  } catch (error) {
+    console.error("Failed to visualize table:", error);
+  }
 }
 
 async function fetchDrilledData(
@@ -412,38 +428,57 @@ async function fetchDrilledData(
   sqlQuery,
   rowValue
 ) {
+  console.log("got to fetchDrilledData");
   showLoadingIndicator();
+  console.log(
+    "firstColumnName: ",
+    firstColumnName,
+    "\ncolumnName:",
+    columnName
+  );
+  const reqBodyObj = {
+    user_query: decodeURIComponent(userQuery),
+    sql_query: sqlQuery,
+    drill_type: drillTypeEnumString(buttonName),
+    column_name: columnName,
+    parent_drill_column: firstColumnName ? firstColumnName : columnName,
+  };
+  if (rowValue) {
+    reqBodyObj.column_value = rowValue;
+  }
+  const reqBody = JSON.stringify(reqBodyObj);
+  console.log("reqBody: ", reqBody);
   try {
-    // `${backendBaseUrl}/chat-sessions/${chatId}/ask/${conversationId}/`,
-    const response = await fetch("http://127.0.0.1:8000/perform-drilling", {
-      method: "POST",
-      headers: { "Content-Type": "application/json; charset=utf-8" },
-      body: JSON.stringify({
-        user_query: decodeURIComponent(userQuery),
-        sql_query: sqlQuery,
-        drilling_metadata: {
-          column_name: columnName,
-          column_value: rowValue, // functionality for row-specific drilling
-          drill_across: buttonName === "Drill Across",
+    const response = await fetch(
+      `${backendBaseUrl}/chat-sessions/${chatId}/drill/${conversationId}/`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${jwtToken}`,
+          "Content-Type": "application/json; charset=utf-8",
         },
-      }),
-    });
+        body: reqBody,
+      }
+    );
 
     const data = await response.json();
+    console.log("fetchDrilledData data: ", data);
     return data;
   } catch (error) {
     console.error("Error fetching drilled data:", error);
     throw error;
-  } finally {
-    hideLoadingIndicator();
   }
 }
 
-function capitalizeString(input) {
-  const capitalizedString = input
+function drillTypeEnumString(input) {
+  const upperCasedSnakeString = input.toUpperCase().replace(/\s+/g, "_");
+  return upperCasedSnakeString;
+}
+function upperCaseString(input) {
+  const upperCasedString = input
     .replace(/_/g, " ")
     .replace(/\b\w/g, (c) => c.toUpperCase());
-  return capitalizedString;
+  return upperCasedString;
 }
 
 function nothingToDisplay() {
