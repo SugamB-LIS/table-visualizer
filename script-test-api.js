@@ -281,6 +281,7 @@ function createPopup(x, y, userQuery, columnName, sqlQuery, options, rowValue) {
 
   const closeButton = document.createElement("button");
   closeButton.textContent = "X";
+  closeButton.className = "close";
   closeButton.onclick = () => popup.remove();
   popup.appendChild(closeButton);
 

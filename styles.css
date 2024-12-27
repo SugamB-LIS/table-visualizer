@@ -72,15 +72,26 @@ td {
 }
 
 .popup button {
+  align-self: flex-center;
+  text-align: center;
+  margin: 2px;
+  border: 1px solid #ccc;
+  background-color: #f4f4f4;
+  cursor: pointer;
+}
+.popup button.close {
   align-self: flex-end;
-  margin-bottom: 2px;
   border: none;
   background: transparent;
+  font-weight: bold;
   cursor: pointer;
+}
+.popup button:hover {
+  background-color: #e0e0e0;
+  transform: translateY(-2px);
 }
 
 .loading-indicator {
-  text-align: center;
   font-weight: bold;
 }
 
