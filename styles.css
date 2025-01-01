@@ -56,3 +56,69 @@ td {
 #sql-query-container:empty {
   display: none;
 }
+
+.popup {
+  position: absolute;
+  padding: 10px;
+  background: #fff;
+  border: 1px solid #ccc;
+  box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+  z-index: 1000;
+  padding: 5px;
+  width: 200px;
+  display: flex;
+  flex-direction: column;
+  border-radius: 8px;
+}
+
+.popup button {
+  align-self: flex-center;
+  text-align: center;
+  margin: 2px;
+  border: 1px solid #ccc;
+  background-color: #f4f4f4;
+  cursor: pointer;
+}
+.popup button.close {
+  align-self: flex-end;
+  border: none;
+  background: transparent;
+  font-weight: bold;
+  cursor: pointer;
+}
+.popup button:hover {
+  background-color: #e0e0e0;
+  transform: translateY(-2px);
+}
+
+.loading-indicator {
+  font-weight: bold;
+}
+
+.accordion-container {
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  margin: 10px;
+  overflow: hidden;
+  box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.accordion-item {
+  border-bottom: 2px solid #ddd;
+}
+
+.accordion-title {
+  padding: 10px;
+  cursor: pointer;
+  background-color: #f9f9f9;
+  font-weight: bold;
+}
+
+.accordion-content {
+  display: none;
+  padding: 10px;
+  background-color: #fff;
+  border-top: 1px solid #ddd;
+  white-space: pre-wrap;
+  overflow: auto;
+}

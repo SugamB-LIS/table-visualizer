@@ -1,8 +1,8 @@
-const backendBaseUrl = "https://dev-inteliome.yco.com.np/backend/api/v1";
-const jwtToken =
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzM1MjE1NTAyLCJpYXQiOjE3MzUyMDExMDIsImp0aSI6ImE0ZDJmZTdjMDQ0YTQ4MzFiY2Q1ZjcyMjAwNzZmODI5IiwidXNlcl9pZCI6Ijk1NzRmMmY1LTQ1NjYtNGI4ZS1iNzE5LTRiZWI5MzBmZDEzOCIsInJvbGVzIjpbIlVTRVIiXSwidXNlcm5hbWUiOiJuaXNhbjEyMyJ9.xplC2AfmvjU26EUjSKyKLq3wt93SeKgRomXXEllD9Rw";
-const chatId = "fa7e2df2-efaf-4ccd-ba6f-d564916d00d2";
-const conversationId = "ebc97c10-a778-4b19-a153-ad6da04a44af";
+let backendBaseUrl = CONFIG.BACKEND_BASE_URL;
+let jwtToken;
+let refreshToken;
+let chatId = CONFIG.CHAT_ID;
+let conversationId = CONFIG.CONVERSATION_ID;
 
 const tableContainer = document.getElementById("table-container");
 const sqlQueryContainer = document.getElementById("sql-query-container");
@@ -72,7 +72,8 @@ async function processQuery(userQuery) {
     alert("Please enter a valid query.");
     return;
   }
-
+  await checkAndRefreshTokens();
+  console.log("jwtToken: ", jwtToken);
   clearPreviousState();
 
   try {
@@ -128,6 +129,7 @@ async function fetchInitialData(userQuery) {
 // Queue messages: PENDING, FAILED, SUCCESS
 async function checkQueuePolling(queueId) {
   console.log("Checking queue:", queueId);
+  await checkAndRefreshTokens();
 
   try {
     const response = await fetch(`${backendBaseUrl}/check-queue/${queueId}/`, {
@@ -276,34 +278,13 @@ function handleColumnClick(
 
 function createPopup(x, y, userQuery, columnName, sqlQuery, options, rowValue) {
   closeExistingPopup();
-
   const popup = document.createElement("div");
   popup.className = "popup";
 
-  popup.style.cssText = `
-    position: absolute; 
-    top: ${y}px; 
-    left: ${x}px; 
-    padding: 10px; 
-    background: #fff; 
-    border: 1px solid #ccc; 
-    box-shadow: 0px 4px 6px rgba(0,0,0,0.1); 
-    z-index: 1000; 
-    padding: 5px;
-    width: 200px; 
-    display: flex; 
-    flex-direction: column; 
-    border-radius: 8px;
-  `;
-
   const closeButton = document.createElement("button");
   closeButton.textContent = "X";
-  closeButton.style.cssText = `
-    align-self: flex-end; margin-bottom: 2px; border: none; background: transparent; cursor: pointer;
-  `;
-
+  closeButton.className = "close";
   closeButton.onclick = () => popup.remove();
-
   popup.appendChild(closeButton);
 
   options.forEach((option) => {
@@ -326,21 +307,15 @@ function createPopup(x, y, userQuery, columnName, sqlQuery, options, rowValue) {
 
   document.body.appendChild(popup);
 
-  // Measure popup dimensions
+  // Adjust position dynamically
   const popupHeight = popup.offsetHeight;
   const popupWidth = popup.offsetWidth;
   const viewportHeight = window.innerHeight;
   const viewportWidth = window.innerWidth;
 
-  // Calculate vertical position
-  const positionAbove = y + popupHeight > viewportHeight;
-  const adjustedY = positionAbove ? y - popupHeight : y;
+  const adjustedY = y + popupHeight > viewportHeight ? y - popupHeight : y;
+  const adjustedX = x + popupWidth > viewportWidth ? x - popupWidth : x;
 
-  // Calculate horizontal position
-  const positionLeft = x + popupWidth > viewportWidth;
-  const adjustedX = positionLeft ? x - popupWidth : x;
-
-  // Apply final positions
   popup.style.top = `${adjustedY}px`;
   popup.style.left = `${adjustedX}px`;
 
@@ -486,8 +461,8 @@ function nothingToDisplay() {
   const goBackButton = document.createElement("button");
   goBackButton.textContent = "<=== Go Back";
   goBackButton.style.cssText = `
-    align-self: flex-end; margin: 10px 0 0 10px; cursor: pointer;
-  `;
+      align-self: flex-end; margin: 10px 0 0 10px; cursor: pointer;
+    `;
 
   goBackButton.onclick = () => {
     messageContainer.innerHTML = "";
@@ -526,54 +501,101 @@ function renderAccordionFromLogger() {
     return;
   }
 
-  const accordion = document.createElement("div"); // Container for accordion
-  accordion.style.cssText = `
-      border: 1px solid #ddd;
-      border-radius: 5px;
-      margin: 10px;
-      overflow: hidden;
-      box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.1);
-  `;
+  const accordion = document.createElement("div");
+  accordion.className = "accordion-container";
 
   logger.logs.forEach((entry, index) => {
     const accordionItem = document.createElement("div");
-    accordionItem.style.cssText = `
-          border-bottom: 2px solid #ddd;
-      `;
+    accordionItem.className = "accordion-item";
 
-    // Accordion Title
     const title = document.createElement("div");
-    title.textContent = index + 1 + ": " + entry.title;
-    title.style.cssText = `
-          padding: 10px;
-          cursor: pointer;
-          background-color: #f9f9f9;
-          font-weight: bold;
-      `;
+    title.className = "accordion-title";
+    title.textContent = `${index + 1}: ${entry.title}`;
     title.onclick = () => {
       const content = accordionItem.querySelector(".accordion-content");
-      const isVisible = content.style.display === "block";
-      content.style.display = isVisible ? "none" : "block";
+      content.style.display =
+        content.style.display === "block" ? "none" : "block";
     };
 
-    // Accordion Content
     const content = document.createElement("div");
     content.className = "accordion-content";
-    content.style.cssText = `
-          display: none;
-          padding: 10px;
-          background-color: #fff;
-          border-top: 1px solid #ddd;
-          white-space: pre-wrap;
-          overflow: auto;
-      `;
     content.textContent = entry.sql;
 
-    // Append to accordion item
     accordionItem.appendChild(title);
     accordionItem.appendChild(content);
     accordion.appendChild(accordionItem);
   });
 
   sqlQueryContainer.appendChild(accordion);
+}
+
+async function checkAndRefreshTokens() {
+  console.log("checkAndRefreshTokens");
+  if (!jwtToken || !refreshToken) {
+    await login();
+    return;
+  }
+
+  try {
+    const currentTime = Math.floor(Date.now() / 1000);
+    const jwtPayload = JSON.parse(atob(jwtToken.split(".")[1]));
+    const refreshTokenPayload = JSON.parse(atob(refreshToken.split(".")[1]));
+
+    if (currentTime >= jwtPayload.exp) {
+      if (currentTime < refreshTokenPayload.exp) {
+        await fetchRefreshToken();
+      } else {
+        await login();
+      }
+    }
+  } catch (error) {
+    console.error("Invalid token structure:", error);
+    await login();
+  }
+}
+
+async function fetchRefreshToken() {
+  try {
+    const response = await fetch(`${backendBaseUrl}/poc/refresh-token/`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${jwtToken}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ access: jwtToken }),
+    });
+
+    if (!response.ok) throw await response.json();
+
+    const data = await response.json();
+    jwtToken = data.data.access;
+  } catch (error) {
+    console.error("Failed to refresh token:", error);
+    await login();
+  }
+}
+
+async function login() {
+  console.log("Login");
+  try {
+    const response = await fetch(`${backendBaseUrl}/poc/user/login/`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        username: CONFIG.USERNAME,
+        password: CONFIG.PASSWORD,
+      }),
+    });
+
+    if (!response.ok) throw await response.json();
+
+    const data = await response.json();
+    jwtToken = data.data.access;
+    refreshToken = data.data.refresh;
+  } catch (error) {
+    console.error("Login failed:", error);
+    throw error;
+  }
 }
