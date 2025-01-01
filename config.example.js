@@ -4,5 +4,4 @@ const CONFIG = {
   PASSWORD: "",
   CHAT_ID: "",
   CONVERSATION_ID: "",
-  JWT_TOKEN: "",
 };
