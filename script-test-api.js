@@ -1,8 +1,7 @@
 const backendBaseUrl = "https://dev-inteliome.yco.com.np/backend/api/v1";
-const jwtToken =
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzM1MjkyODE5LCJpYXQiOjE3MzUyNzg0MTksImp0aSI6ImI0ZjZkYWUyY2I0MDQ2OTNiNDgwZjgwYTdiOWIzM2EyIiwidXNlcl9pZCI6Ijk1NzRmMmY1LTQ1NjYtNGI4ZS1iNzE5LTRiZWI5MzBmZDEzOCIsInJvbGVzIjpbIlVTRVIiXSwidXNlcm5hbWUiOiJuaXNhbjEyMyJ9.wyBY_la2U8dPKlSoE62H5vtNOpUGGerHrX1WsVe4oxQ";
-const chatId = "fa7e2df2-efaf-4ccd-ba6f-d564916d00d2";
-const conversationId = "ebc97c10-a778-4b19-a153-ad6da04a44af";
+let jwtToken;
+let chatId;
+let conversationId;
 
 const tableContainer = document.getElementById("table-container");
 const sqlQueryContainer = document.getElementById("sql-query-container");
