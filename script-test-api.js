@@ -1,7 +1,8 @@
-const backendBaseUrl = "https://dev-inteliome.yco.com.np/backend/api/v1";
+let backendBaseUrl = CONFIG.BACKEND_BASE_URL;
 let jwtToken;
-let chatId;
-let conversationId;
+let refreshToken;
+let chatId = CONFIG.CHAT_ID;
+let conversationId = CONFIG.CONVERSATION_ID;
 
 const tableContainer = document.getElementById("table-container");
 const sqlQueryContainer = document.getElementById("sql-query-container");
@@ -71,7 +72,8 @@ async function processQuery(userQuery) {
     alert("Please enter a valid query.");
     return;
   }
-
+  await checkAndRefreshTokens();
+  console.log("jwtToken: ", jwtToken);
   clearPreviousState();
 
   try {
@@ -127,6 +129,7 @@ async function fetchInitialData(userQuery) {
 // Queue messages: PENDING, FAILED, SUCCESS
 async function checkQueuePolling(queueId) {
   console.log("Checking queue:", queueId);
+  await checkAndRefreshTokens();
 
   try {
     const response = await fetch(`${backendBaseUrl}/check-queue/${queueId}/`, {
@@ -458,8 +461,8 @@ function nothingToDisplay() {
   const goBackButton = document.createElement("button");
   goBackButton.textContent = "<=== Go Back";
   goBackButton.style.cssText = `
-    align-self: flex-end; margin: 10px 0 0 10px; cursor: pointer;
-  `;
+      align-self: flex-end; margin: 10px 0 0 10px; cursor: pointer;
+    `;
 
   goBackButton.onclick = () => {
     messageContainer.innerHTML = "";
@@ -524,4 +527,75 @@ function renderAccordionFromLogger() {
   });
 
   sqlQueryContainer.appendChild(accordion);
+}
+
+async function checkAndRefreshTokens() {
+  console.log("checkAndRefreshTokens");
+  if (!jwtToken || !refreshToken) {
+    await login();
+    return;
+  }
+
+  try {
+    const currentTime = Math.floor(Date.now() / 1000);
+    const jwtPayload = JSON.parse(atob(jwtToken.split(".")[1]));
+    const refreshTokenPayload = JSON.parse(atob(refreshToken.split(".")[1]));
+
+    if (currentTime >= jwtPayload.exp) {
+      if (currentTime < refreshTokenPayload.exp) {
+        await fetchRefreshToken();
+      } else {
+        await login();
+      }
+    }
+  } catch (error) {
+    console.error("Invalid token structure:", error);
+    await login();
+  }
+}
+
+async function fetchRefreshToken() {
+  try {
+    const response = await fetch(`${backendBaseUrl}/poc/refresh-token/`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${jwtToken}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ access: jwtToken }),
+    });
+
+    if (!response.ok) throw await response.json();
+
+    const data = await response.json();
+    jwtToken = data.data.access;
+  } catch (error) {
+    console.error("Failed to refresh token:", error);
+    await login();
+  }
+}
+
+async function login() {
+  console.log("Login");
+  try {
+    const response = await fetch(`${backendBaseUrl}/poc/user/login/`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        username: CONFIG.USERNAME,
+        password: CONFIG.PASSWORD,
+      }),
+    });
+
+    if (!response.ok) throw await response.json();
+
+    const data = await response.json();
+    jwtToken = data.data.access;
+    refreshToken = data.data.refresh;
+  } catch (error) {
+    console.error("Login failed:", error);
+    throw error;
+  }
 }
