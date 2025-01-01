@@ -20,8 +20,6 @@ This project is a dynamic table visualization tool that fetches data based on us
   - Fetching initial and drilled data.
   - Visualizing the table and SQL query.
   - Handling column clicks and popup interactions.
-- **`script-local-api.js`**: JavaScript logic for local json data.
-  - Used for local debugging when api is not available
 
 ## How to Use
 
@@ -32,4 +30,5 @@ This project is a dynamic table visualization tool that fetches data based on us
 
 ## Important Notes
 
-- The backend API endpoints (`fetch-data` and `perfom-drilling`) must be running and accessible at `http://127.0.0.1:8000`.
+- The dev server must be up for API endpoints (https://dev-inteliome.yco.com.np/backend/api/swagger/)
+- copy config.example.js to config.js and fill the key-value pairs
