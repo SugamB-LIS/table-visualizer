@@ -8,7 +8,6 @@
   </head>
   <body>
     <h1>Generate Table from Query</h1>
-
     <input
       type="text"
       id="user-query"
@@ -21,8 +20,27 @@
     <div id="sql-query-container"></div>
     <div id="message-container"></div>
     <div id="table-container"></div>
-
     <script src="config.js"></script>
     <script src="script-test-api.js"></script>
+    <script>
+      // Function to get URL parameters
+      function getQueryParam(param) {
+        const urlParams = new URLSearchParams(window.location.search);
+        return urlParams.get(param);
+      }
+
+      // Function to automatically populate the input field and generate the table
+      function autoGenerateTable() {
+        const query = getQueryParam("query");
+        if (query) {
+          const inputField = document.getElementById("user-query");
+          inputField.value = query;
+          processQuery(query);
+        }
+      }
+
+      // Call the function when the page loads
+      window.onload = autoGenerateTable;
+    </script>
   </body>
 </html>

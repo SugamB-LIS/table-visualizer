@@ -73,6 +73,7 @@ async function processQuery(userQuery) {
     return;
   }
   await checkAndRefreshTokens();
+  // await login();
   console.log("jwtToken: ", jwtToken);
   clearPreviousState();
 
@@ -130,7 +131,7 @@ async function fetchInitialData(userQuery) {
 async function checkQueuePolling(queueId) {
   console.log("Checking queue:", queueId);
   await checkAndRefreshTokens();
-
+  // await login();
   try {
     const response = await fetch(`${backendBaseUrl}/check-queue/${queueId}/`, {
       method: "GET",
